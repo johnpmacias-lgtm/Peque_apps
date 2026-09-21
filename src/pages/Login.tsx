@@ -14,18 +14,22 @@ export default function Login() {
   const tema = useStore(s => s.tema);
   const toggleTema = useStore(s => s.toggleTema);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    setTimeout(() => {
-      const success = login(username, password);
+    try {
+      const success = await login(username, password);
       if (!success) {
         setError('Usuario o contraseña incorrectos.');
       }
+    } catch (error) {
+      console.error('Error en login:', error);
+      setError('Error al iniciar sesión. Intenta de nuevo.');
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   const selectUser = (user: { nombre: string }) => {
