@@ -19,7 +19,14 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
   const { currentUser, isLoading } = useStore();
   const location = useLocation();
 
+  console.log('=== PROTECTED ROUTE ===');
+  console.log('isLoading:', isLoading);
+  console.log('currentUser:', currentUser ? currentUser.nombre : 'null');
+  console.log('currentUser.rol:', currentUser?.rol);
+  console.log('allowedRoles:', allowedRoles);
+
   if (isLoading) {
+    console.log('⏳ Mostrando pantalla de carga...');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <div className="text-white text-lg">Cargando sistema...</div>
@@ -28,13 +35,17 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
   }
 
   if (!currentUser) {
+    console.log('❌ No hay usuario, redirigiendo a /login');
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   if (!allowedRoles.includes(currentUser.rol)) {
+    console.log('❌ Rol no permitido:', currentUser.rol);
+    console.log('Roles permitidos:', allowedRoles);
     return <Navigate to="/" replace />;
   }
 
+  console.log('✅ Acceso permitido');
   return <>{children}</>;
 }
 

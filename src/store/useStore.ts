@@ -90,8 +90,15 @@ export const useStore = create<AppState>()(
       initialize: async () => {
         const state = get();
         
+        console.log('=== INICIALIZANDO STORE ===');
+        console.log('Usuarios en localStorage:', state.usuarios.length);
+        console.log('isLoading:', state.isLoading);
+        
         // Si ya está cargando, no hacer nada
-        if (state.isLoading) return;
+        if (state.isLoading) {
+          console.log('⚠️ Ya está cargando, saltando...');
+          return;
+        }
         
         set({ isLoading: true });
         
@@ -100,18 +107,26 @@ export const useStore = create<AppState>()(
           const needsMigration = state.usuarios.length === 0 || 
             state.usuarios.some(u => !u.passwordHash || u.passwordHash === '');
           
+          console.log('¿Necesita migración?', needsMigration);
+          
           if (needsMigration) {
+            console.log('🔄 Creando usuarios por defecto con contraseñas hasheadas...');
             // Crear usuarios por defecto con contraseñas hasheadas
             const defaultUsers = await createDefaultUsers();
+            console.log('✅ Usuarios creados:', defaultUsers.length);
+            console.log('Usuarios:', defaultUsers.map(u => u.nombre));
+            
             set({ 
               usuarios: defaultUsers, 
               isLoading: false 
             });
           } else {
+            console.log('✅ Usuarios existentes válidos');
+            console.log('Usuarios:', state.usuarios.map(u => u.nombre));
             set({ isLoading: false });
           }
         } catch (error) {
-          console.error('Error initializing store:', error);
+          console.error('❌ Error initializing store:', error);
           set({ isLoading: false });
         }
       },
@@ -119,31 +134,49 @@ export const useStore = create<AppState>()(
       login: async (username: string, password: string) => {
         const state = get();
         
-        // Buscar usuario por nombre
-        const user = state.usuarios.find(u => u.nombre === username && u.activo);
+        console.log('=== INICIO DE SESIÓN ===');
+        console.log('Username recibido:', username);
+        console.log('Usuarios disponibles:', state.usuarios.map(u => ({ nombre: u.nombre, activo: u.activo, tieneHash: !!u.passwordHash })));
+        
+        // Normalizar el username (trim y case-insensitive)
+        const normalizedUsername = username.trim().toLowerCase();
+        
+        // Buscar usuario por nombre (case-insensitive)
+        const user = state.usuarios.find(u => 
+          u.nombre.trim().toLowerCase() === normalizedUsername && u.activo
+        );
+        
         if (!user) {
-          console.log('Usuario no encontrado o inactivo:', username);
+          console.error('❌ Usuario no encontrado o inactivo:', username);
+          console.error('Usuarios activos:', state.usuarios.filter(u => u.activo).map(u => u.nombre));
           return false;
         }
         
+        console.log('✅ Usuario encontrado:', user.nombre);
+        
         // Verificar que tenga passwordHash
-        if (!user.passwordHash) {
-          console.error('Usuario sin passwordHash:', username);
+        if (!user.passwordHash || user.passwordHash === '') {
+          console.error('❌ Usuario sin passwordHash:', user.nombre);
+          console.error('Esto indica que los datos están corruptos. Usa el botón de reset.');
           return false;
         }
         
         try {
+          console.log('🔐 Verificando contraseña con bcrypt...');
           // Verificación segura con bcrypt
           const isValid = await verifyPassword(password, user.passwordHash);
+          
           if (!isValid) {
-            console.log('Contraseña incorrecta para:', username);
+            console.error('❌ Contraseña incorrecta para:', user.nombre);
             return false;
           }
           
+          console.log('✅ Contraseña correcta. Iniciando sesión...');
           set({ currentUser: user });
+          console.log('✅ Login exitoso. Usuario actual:', user.nombre);
           return true;
         } catch (error) {
-          console.error('Error en login:', error);
+          console.error('❌ Error en login:', error);
           return false;
         }
       },

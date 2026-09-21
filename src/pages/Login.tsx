@@ -16,16 +16,27 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('=== FORMULARIO ENVIADO ===');
+    console.log('Username:', username);
+    console.log('Password length:', password.length);
+    console.log('e.preventDefault() ejecutado - no habrá recarga de página');
+    
     setLoading(true);
     setError('');
 
     try {
+      console.log('Llamando a login()...');
       const success = await login(username, password);
+      console.log('Resultado de login():', success);
+      
       if (!success) {
+        console.log('❌ Login fallido, mostrando error');
         setError('Usuario o contraseña incorrectos.');
+      } else {
+        console.log('✅ Login exitoso, el sistema debería redirigir automáticamente');
       }
     } catch (error) {
-      console.error('Error en login:', error);
+      console.error('❌ Error en login:', error);
       setError('Error al iniciar sesión. Intenta de nuevo.');
     } finally {
       setLoading(false);
