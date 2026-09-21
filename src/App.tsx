@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from './store/useStore';
 import { useTema } from './hooks/useTema';
 import Login from './pages/Login';
@@ -13,84 +14,112 @@ import MenuPage from './pages/MenuPage';
 import Sidebar from './components/Sidebar';
 import FacturaModal from './components/FacturaModal';
 
-function App() {
-  const { currentUser, generarAlertas, ultimaFactura } = useStore();
-  const { tema } = useTema();
-  const [currentPage, setCurrentPage] = useState('dashboard');
+// Protected Route Component
+function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) {
+  const { currentUser, isInitialized } = useStore();
+  const location = useLocation();
 
-  // Generate alerts on load
-  useEffect(() => {
-    generarAlertas();
-  }, []);
-
-  // Redirect based on role
-  useEffect(() => {
-    if (currentUser) {
-      if (currentUser.rol === 'cocina' && currentPage === 'dashboard') {
-        setCurrentPage('cocina');
-      }
-    }
-  }, [currentUser]);
-
-  // Not logged in
-  if (!currentUser) {
-    return <Login />;
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="text-white">Cargando...</div>
+      </div>
+    );
   }
 
+  if (!currentUser) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (!allowedRoles.includes(currentUser.rol)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+// Layout with Sidebar
+function AppLayout() {
+  const { currentUser } = useStore();
+  const { tema } = useTema();
+  const [currentPage, setCurrentPage] = useState('dashboard');
+  const navigate = useNavigate();
+  const location = useLocation();
   const isDark = tema === 'dark';
 
-  // Render page based on role and selection
-  const renderPage = () => {
-    const rolePages: Record<string, string[]> = {
-      admin: ['dashboard', 'mesas', 'cocina', 'menu', 'inventario', 'pedidos', 'usuarios', 'configuracion'],
-      mesero: ['dashboard', 'mesas', 'pedidos'],
-      cocina: ['dashboard', 'cocina'],
-    };
+  // Sync currentPage with URL
+  useEffect(() => {
+    const path = location.pathname.slice(1) || 'dashboard';
+    setCurrentPage(path);
+  }, [location]);
 
-    const allowed = rolePages[currentUser.rol] || ['dashboard'];
-    const page = allowed.includes(currentPage) ? currentPage : 'dashboard';
-
-    switch (page) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'cocina':
-        return <Kitchen />;
-      case 'inventario':
-        return <Inventory />;
-      case 'mesas':
-        return <Tables />;
-      case 'pedidos':
-        return <Orders />;
-      case 'configuracion':
-        return <ConfigPage />;
-      case 'usuarios':
-        return <UsersPage />;
-      case 'menu':
-        return <MenuPage />;
-      default:
-        return <Dashboard />;
-    }
+  const handleNavigate = (page: string) => {
+    setCurrentPage(page);
+    navigate(`/${page}`);
   };
+
+  if (!currentUser) return null;
 
   // Kitchen gets a special full-screen layout
   if (currentPage === 'cocina' && currentUser.rol === 'cocina') {
     return (
       <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
         <Kitchen />
-        {ultimaFactura && <FacturaModal />}
+        <FacturaModal />
       </div>
     );
   }
 
   return (
     <div className={`min-h-screen flex transition-colors duration-300 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
+      <Sidebar currentPage={currentPage} onNavigate={handleNavigate} />
       <main className="flex-1 overflow-y-auto min-h-screen">
-        {renderPage()}
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/mesas" element={<Tables />} />
+          <Route path="/cocina" element={<Kitchen />} />
+          <Route path="/menu" element={<MenuPage />} />
+          <Route path="/inventario" element={<Inventory />} />
+          <Route path="/pedidos" element={<Orders />} />
+          <Route path="/usuarios" element={<UsersPage />} />
+          <Route path="/configuracion" element={<ConfigPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
-      {ultimaFactura && <FacturaModal />}
+      <FacturaModal />
     </div>
   );
 }
 
-export default App;
+function AppInitializer() {
+  const { initialize, generarAlertas, isInitialized } = useStore();
+
+  useEffect(() => {
+    initialize();
+  }, []);
+
+  useEffect(() => {
+    if (isInitialized) {
+      generarAlertas();
+    }
+  }, [isInitialized]);
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'mesero', 'cocina']}>
+              <AppLayout />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default AppInitializer;

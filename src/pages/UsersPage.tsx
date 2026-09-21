@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { Users, Shield, ChefHat, UtensilsCrossed, Plus, Edit2, Trash2, X, Save, UserCheck, UserX } from 'lucide-react';
 import { UserRole } from '../types';
+import { validateUsername, validatePasswordStrength } from '../services/authService';
 
 export default function UsersPage() {
   const { usuarios, addUser, updateUser, deleteUser, tema } = useStore();
   const [showModal, setShowModal] = useState(false);
-  const [editingUser, setEditingUser] = useState<number | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+  const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [errors, setErrors] = useState<{ nombre?: string; password?: string }>({});
   const isDark = tema === 'dark';
 
   const [form, setForm] = useState({
@@ -20,33 +22,59 @@ export default function UsersPage() {
   const openNewUser = () => {
     setEditingUser(null);
     setForm({ nombre: '', password: '', rol: 'mesero', activo: true });
+    setErrors({});
     setShowModal(true);
   };
 
-  const openEditUser = (id: number) => {
+  const openEditUser = (id: string) => {
     const user = usuarios.find(u => u.id === id);
     if (!user) return;
     setEditingUser(id);
-    setForm({ nombre: user.nombre, password: user.password, rol: user.rol, activo: user.activo });
+    setForm({ nombre: user.nombre, password: '', rol: user.rol, activo: user.activo });
+    setErrors({});
     setShowModal(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validate = (): boolean => {
+    const newErrors: { nombre?: string; password?: string } = {};
+    const usernameValidation = validateUsername(form.nombre);
+    if (!usernameValidation.valid) newErrors.nombre = usernameValidation.error;
+    
+    // Solo validar contraseña si es nuevo usuario o si se proporcionó una nueva
+    if (!editingUser || form.password) {
+      const passwordValidation = validatePasswordStrength(form.password);
+      if (!passwordValidation.valid) {
+        newErrors.password = passwordValidation.errors.join(', ');
+      }
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
+    
     if (editingUser) {
-      updateUser(editingUser, form);
+      const updateData: any = { nombre: form.nombre, rol: form.rol, activo: form.activo };
+      if (form.password) {
+        // La contraseña se pasará como passwordHash y el store la hasheará
+        updateData.passwordHash = form.password;
+      }
+      await updateUser(editingUser, updateData);
     } else {
-      addUser(form);
+      await addUser(form);
     }
     setShowModal(false);
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = (id: string) => {
     deleteUser(id);
     setConfirmDelete(null);
   };
 
-  const toggleActive = (id: number) => {
+  const toggleActive = (id: string) => {
     const user = usuarios.find(u => u.id === id);
     if (user) {
       updateUser(id, { activo: !user.activo });
@@ -82,7 +110,6 @@ export default function UsersPage() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className={`text-2xl font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -102,7 +129,6 @@ export default function UsersPage() {
         </button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className={`rounded-2xl p-4 border ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white border-gray-200'}`}>
           <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Total Usuarios</p>
@@ -118,7 +144,6 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Users Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {usuarios.map(user => (
           <div
@@ -154,27 +179,21 @@ export default function UsersPage() {
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => toggleActive(user.id)}
-                  className={`p-2 rounded-lg transition ${
-                    isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                  } ${user.activo ? 'text-green-400' : 'text-gray-400'}`}
+                  className={`p-2 rounded-lg transition ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} ${user.activo ? 'text-green-400' : 'text-gray-400'}`}
                   title={user.activo ? 'Desactivar' : 'Activar'}
                 >
                   {user.activo ? <UserCheck size={16} /> : <UserX size={16} />}
                 </button>
                 <button
                   onClick={() => openEditUser(user.id)}
-                  className={`p-2 rounded-lg transition ${
-                    isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-900'
-                  }`}
+                  className={`p-2 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-900'}`}
                   title="Editar"
                 >
                   <Edit2 size={16} />
                 </button>
                 <button
                   onClick={() => setConfirmDelete(user.id)}
-                  className={`p-2 rounded-lg transition ${
-                    isDark ? 'hover:bg-red-500/10 text-gray-400 hover:text-red-400' : 'hover:bg-red-50 text-gray-400 hover:text-red-500'
-                  }`}
+                  className={`p-2 rounded-lg transition ${isDark ? 'hover:bg-red-500/10 text-gray-400 hover:text-red-400' : 'hover:bg-red-50 text-gray-400 hover:text-red-500'}`}
                   title="Eliminar"
                 >
                   <Trash2 size={16} />
@@ -185,55 +204,7 @@ export default function UsersPage() {
         ))}
       </div>
 
-      {/* Roles Info */}
-      <div className={`rounded-2xl p-5 border ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white border-gray-200'}`}>
-        <h3 className={`text-sm font-semibold uppercase mb-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-          Permisos por Rol
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className={`p-4 rounded-xl border ${isDark ? 'bg-purple-500/5 border-purple-500/20' : 'bg-purple-50 border-purple-200'}`}>
-            <div className="flex items-center gap-2 mb-2">
-              <Shield size={18} className="text-purple-400" />
-              <span className={`text-sm font-semibold ${isDark ? 'text-purple-400' : 'text-purple-700'}`}>Administrador</span>
-            </div>
-            <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              <li>• Acceso total al sistema</li>
-              <li>• Gestión de usuarios</li>
-              <li>• Configuración global</li>
-              <li>• Reportes financieros</li>
-              <li>• Inventario completo</li>
-            </ul>
-          </div>
-          <div className={`p-4 rounded-xl border ${isDark ? 'bg-blue-500/5 border-blue-500/20' : 'bg-blue-50 border-blue-200'}`}>
-            <div className="flex items-center gap-2 mb-2">
-              <UtensilsCrossed size={18} className="text-blue-400" />
-              <span className={`text-sm font-semibold ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>Mesero</span>
-            </div>
-            <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              <li>• Gestión de mesas</li>
-              <li>• Tomar pedidos</li>
-              <li>• Ver estado de cocina</li>
-              <li>• Cobrar cuentas</li>
-              <li>• Dashboard básico</li>
-            </ul>
-          </div>
-          <div className={`p-4 rounded-xl border ${isDark ? 'bg-amber-500/5 border-amber-500/20' : 'bg-amber-50 border-amber-200'}`}>
-            <div className="flex items-center gap-2 mb-2">
-              <ChefHat size={18} className="text-amber-400" />
-              <span className={`text-sm font-semibold ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>Cocina</span>
-            </div>
-            <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              <li>• Pantalla de cocina</li>
-              <li>• Ver pedidos en tiempo real</li>
-              <li>• Marcar platos listos</li>
-              <li>• Dashboard de cocina</li>
-              <li>• Sin acceso a cobros</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* Create/Edit Modal */}
+      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className={`rounded-2xl w-full max-w-md border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
@@ -241,10 +212,7 @@ export default function UsersPage() {
               <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 {editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}
               </h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className={`p-2 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
-              >
+              <button onClick={() => setShowModal(false)} className={`p-2 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
                 <X size={18} />
               </button>
             </div>
@@ -258,42 +226,36 @@ export default function UsersPage() {
                   value={form.nombre}
                   onChange={e => setForm({ ...form, nombre: e.target.value })}
                   className={`w-full px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 ${
-                    isDark
-                      ? 'bg-gray-700/50 border border-gray-600/50 text-white placeholder-gray-500'
-                      : 'bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400'
-                  }`}
+                    isDark ? 'bg-gray-700/50 border border-gray-600/50 text-white placeholder-gray-500' : 'bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400'
+                  } ${errors.nombre ? 'border-red-500' : ''}`}
                   placeholder="Ej: Juan Pérez"
                   required
                 />
+                {errors.nombre && <p className="text-xs text-red-400 mt-1">{errors.nombre}</p>}
               </div>
               <div>
                 <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Contraseña
+                  Contraseña {editingUser && '(dejar vacío para no cambiar)'}
                 </label>
                 <input
-                  type="text"
+                  type="password"
                   value={form.password}
                   onChange={e => setForm({ ...form, password: e.target.value })}
                   className={`w-full px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 ${
-                    isDark
-                      ? 'bg-gray-700/50 border border-gray-600/50 text-white placeholder-gray-500'
-                      : 'bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400'
-                  }`}
-                  placeholder="Contraseña"
-                  required
+                    isDark ? 'bg-gray-700/50 border border-gray-600/50 text-white placeholder-gray-500' : 'bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400'
+                  } ${errors.password ? 'border-red-500' : ''}`}
+                  placeholder="Mín. 6 caracteres, 1 mayúscula, 1 número"
+                  required={!editingUser}
                 />
+                {errors.password && <p className="text-xs text-red-400 mt-1">{errors.password}</p>}
               </div>
               <div>
-                <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Rol
-                </label>
+                <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Rol</label>
                 <select
                   value={form.rol}
                   onChange={e => setForm({ ...form, rol: e.target.value as UserRole })}
                   className={`w-full px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 ${
-                    isDark
-                      ? 'bg-gray-700/50 border border-gray-600/50 text-white'
-                      : 'bg-gray-50 border border-gray-300 text-gray-900'
+                    isDark ? 'bg-gray-700/50 border border-gray-600/50 text-white' : 'bg-gray-50 border border-gray-300 text-gray-900'
                   }`}
                 >
                   <option value="admin">👤 Administrador</option>
@@ -302,35 +264,22 @@ export default function UsersPage() {
                 </select>
               </div>
               <div className="flex items-center gap-3">
-                <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Estado:
-                </label>
+                <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Estado:</label>
                 <button
                   type="button"
                   onClick={() => setForm({ ...form, activo: !form.activo })}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                    form.activo
-                      ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                      : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                    form.activo ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
                   }`}
                 >
                   {form.activo ? '● Activo' : '○ Inactivo'}
                 </button>
               </div>
               <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className={`flex-1 px-4 py-2.5 rounded-xl text-sm transition ${
-                    isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                  }`}
-                >
+                <button type="button" onClick={() => setShowModal(false)} className={`flex-1 px-4 py-2.5 rounded-xl text-sm transition ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}>
                   Cancelar
                 </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm transition flex items-center justify-center gap-2"
-                >
+                <button type="submit" className="flex-1 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm transition flex items-center justify-center gap-2">
                   <Save size={14} />
                   {editingUser ? 'Actualizar' : 'Crear'}
                 </button>
@@ -340,31 +289,18 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className={`rounded-2xl w-full max-w-sm border p-6 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              ¿Eliminar usuario?
-            </h3>
+            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>¿Eliminar usuario?</h3>
             <p className={`text-sm mb-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Esta acción no se puede deshacer. El usuario <strong>
-                {usuarios.find(u => u.id === confirmDelete)?.nombre}
-              </strong> será eliminado permanentemente.
+              El usuario <strong>{usuarios.find(u => u.id === confirmDelete)?.nombre}</strong> será eliminado permanentemente.
             </p>
             <div className="flex gap-2">
-              <button
-                onClick={() => setConfirmDelete(null)}
-                className={`flex-1 px-4 py-2.5 rounded-xl text-sm transition ${
-                  isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                }`}
-              >
+              <button onClick={() => setConfirmDelete(null)} className={`flex-1 px-4 py-2.5 rounded-xl text-sm transition ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}>
                 Cancelar
               </button>
-              <button
-                onClick={() => handleDelete(confirmDelete)}
-                className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm transition"
-              >
+              <button onClick={() => handleDelete(confirmDelete)} className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm transition">
                 Eliminar
               </button>
             </div>

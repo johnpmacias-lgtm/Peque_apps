@@ -186,6 +186,12 @@ export default function Login() {
                 </button>
               ))}
             </div>
+            <div className={`mt-3 p-2 rounded-lg text-xs ${tema === 'dark' ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-100 text-gray-600'}`}>
+              <p className="font-semibold mb-1">Contraseñas de prueba:</p>
+              <p>• Admin: <code className="bg-gray-800 px-1 rounded">Admin1</code></p>
+              <p>• Mesero: <code className="bg-gray-800 px-1 rounded">Mesero1</code></p>
+              <p>• Cocina: <code className="bg-gray-800 px-1 rounded">Cocina1</code></p>
+            </div>
           </div>
         </div>
 

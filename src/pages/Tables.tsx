@@ -5,7 +5,7 @@ import { UtensilsCrossed, Plus, Users as UsersIcon } from 'lucide-react';
 export default function Tables() {
   const { mesas, pedidos, updateMesaEstado, platos, addPedido, currentUser, tema } = useStore();
   const [selectedMesa, setSelectedMesa] = useState<number | null>(null);
-  const [orderItems, setOrderItems] = useState<{ platoId: number; cantidad: number; notas: string }[]>([]);
+  const [orderItems, setOrderItems] = useState<{ platoId: string; cantidad: number; notas: string }[]>([]);
   const [notasGenerales, setNotasGenerales] = useState('');
   const [showOrderModal, setShowOrderModal] = useState(false);
   const isDark = tema === 'dark';
@@ -20,7 +20,7 @@ export default function Tables() {
     }
   };
 
-  const addItem = (platoId: number) => {
+  const addItem = (platoId: string) => {
     const existing = orderItems.find(i => i.platoId === platoId);
     if (existing) {
       setOrderItems(orderItems.map(i =>
@@ -31,11 +31,11 @@ export default function Tables() {
     }
   };
 
-  const removeItem = (platoId: number) => {
+  const removeItem = (platoId: string) => {
     setOrderItems(orderItems.filter(i => i.platoId !== platoId));
   };
 
-  const updateQuantity = (platoId: number, delta: number) => {
+  const updateQuantity = (platoId: string, delta: number) => {
     setOrderItems(orderItems.map(i => {
       if (i.platoId === platoId) {
         const newQty = i.cantidad + delta;

@@ -10,7 +10,7 @@ export default function Inventory() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [restockId, setRestockId] = useState<number | null>(null);
+  const [restockId, setRestockId] = useState<string | null>(null);
   const [restockAmount, setRestockAmount] = useState('');
   const isDark = tema === 'dark';
 

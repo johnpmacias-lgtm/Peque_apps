@@ -5,16 +5,16 @@
 export type UserRole = 'admin' | 'mesero' | 'cocina';
 
 export interface Usuario {
-  id: number;
+  id: string;
   nombre: string;
-  password: string; // En producción: bcrypt hash
+  passwordHash: string;
   rol: UserRole;
   activo: boolean;
   avatar?: string;
 }
 
 export interface ConfiguracionRestaurante {
-  id: number;
+  id: string;
   nombre: string;
   logotipo: string;
   moneda: string;
@@ -25,7 +25,7 @@ export interface ConfiguracionRestaurante {
 }
 
 export interface Ingrediente {
-  id: number;
+  id: string;
   nombre: string;
   stock_actual: number;
   stock_minimo: number;
@@ -34,7 +34,7 @@ export interface Ingrediente {
 }
 
 export interface Plato {
-  id: number;
+  id: string;
   nombre: string;
   precio: number;
   categoria: string;
@@ -44,8 +44,8 @@ export interface Plato {
 }
 
 export interface PlatoIngrediente {
-  plato_id: number;
-  ingrediente_id: number;
+  plato_id: string;
+  ingrediente_id: string;
   cantidad: number;
 }
 
@@ -59,8 +59,8 @@ export interface Mesa {
 export type EstadoPedido = 'pendiente' | 'preparando' | 'listo' | 'servido' | 'pagado' | 'cancelado';
 
 export interface PedidoItem {
-  id: number;
-  plato_id: number;
+  id: string;
+  plato_id: string;
   plato_nombre: string;
   cantidad: number;
   notas: string;
@@ -68,10 +68,10 @@ export interface PedidoItem {
 }
 
 export interface Pedido {
-  id: number;
+  id: string;
   mesa_id: number;
   mesa_numero: number;
-  mesero_id: number;
+  mesero_id: string;
   mesero_nombre: string;
   items: PedidoItem[];
   estado: EstadoPedido;
@@ -82,8 +82,8 @@ export interface Pedido {
 }
 
 export interface AlertaInventario {
-  id: number;
-  ingrediente_id: number;
+  id: string;
+  ingrediente_id: string;
   ingrediente_nombre: string;
   stock_actual: number;
   stock_minimo: number;

@@ -32,13 +32,13 @@ export default function Kitchen() {
     return 'text-green-400';
   };
 
-  const handleMarkReady = (pedidoId: number, itemId: number) => {
+  const handleMarkReady = (pedidoId: string, itemId: string) => {
     updatePedidoItemEstado(pedidoId, itemId, 'listo');
     setNotification(`¡Plato listo! Notificando al mesero...`);
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const handleMarkAllReady = (pedidoId: number) => {
+  const handleMarkAllReady = (pedidoId: string) => {
     updatePedidoEstado(pedidoId, 'listo');
     setNotification(`¡Pedido completo listo para servir!`);
     setTimeout(() => setNotification(null), 3000);
@@ -220,8 +220,8 @@ interface OrderCardProps {
   items: any[];
   elapsed: string;
   timeColor: string;
-  onMarkReady: (pedidoId: number, itemId: number) => void;
-  onMarkAllReady: (pedidoId: number) => void;
+  onMarkReady: (pedidoId: string, itemId: string) => void;
+  onMarkAllReady: (pedidoId: string) => void;
   status: string;
 }
 

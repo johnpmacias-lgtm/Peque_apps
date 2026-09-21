@@ -13,7 +13,7 @@ export default function Orders() {
     return p.estado === filter;
   }).sort((a, b) => b.fecha_creacion.getTime() - a.fecha_creacion.getTime());
 
-  const handleUpdateEstado = (pedidoId: number, estado: EstadoPedido) => {
+  const handleUpdateEstado = (pedidoId: string, estado: EstadoPedido) => {
     updatePedidoEstado(pedidoId, estado);
   };
 
