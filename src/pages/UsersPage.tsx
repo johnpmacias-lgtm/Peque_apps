@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { Users, Shield, ChefHat, UtensilsCrossed, Plus, Edit2, Trash2, X, Save, UserCheck, UserX } from 'lucide-react';
+import { Users, Shield, ChefHat, UtensilsCrossed, Plus, Edit2, Trash2, X, Save, UserCheck, UserX, Eye, EyeOff } from 'lucide-react';
 import { UserRole } from '../types';
 import { validateUsername, validatePasswordStrength } from '../services/authService';
 
@@ -10,6 +10,7 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ nombre?: string; password?: string }>({});
+  const [showPassword, setShowPassword] = useState(false);
   const isDark = tema === 'dark';
 
   const [form, setForm] = useState({
@@ -237,16 +238,30 @@ export default function UsersPage() {
                 <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                   Contraseña {editingUser && '(dejar vacío para no cambiar)'}
                 </label>
-                <input
-                  type="password"
-                  value={form.password}
-                  onChange={e => setForm({ ...form, password: e.target.value })}
-                  className={`w-full px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 ${
-                    isDark ? 'bg-gray-700/50 border border-gray-600/50 text-white placeholder-gray-500' : 'bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400'
-                  } ${errors.password ? 'border-red-500' : ''}`}
-                  placeholder="Mín. 6 caracteres, 1 mayúscula, 1 número"
-                  required={!editingUser}
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={form.password}
+                    onChange={e => setForm({ ...form, password: e.target.value })}
+                    className={`w-full px-4 py-2.5 pr-12 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 ${
+                      isDark ? 'bg-gray-700/50 border border-gray-600/50 text-white placeholder-gray-500' : 'bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400'
+                    } ${errors.password ? 'border-red-500' : ''}`}
+                    placeholder="Mín. 6 caracteres, 1 mayúscula, 1 número"
+                    required={!editingUser}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg transition ${
+                      isDark
+                        ? 'text-gray-400 hover:text-white hover:bg-gray-600/50'
+                        : 'text-gray-400 hover:text-gray-700 hover:bg-gray-200'
+                    }`}
+                    title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 {errors.password && <p className="text-xs text-red-400 mt-1">{errors.password}</p>}
               </div>
               <div>

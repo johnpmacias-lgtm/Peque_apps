@@ -78,8 +78,12 @@ export const useStore = create<AppState>()(
         
         set({ isLoading: true });
         
-        // Si no hay usuarios, crear los por defecto con contraseñas hasheadas
-        if (state.usuarios.length === 0) {
+        // Verificar si hay usuarios antiguos sin passwordHash (migración)
+        const needsMigration = state.usuarios.length > 0 && 
+          state.usuarios.some(u => !(u as any).passwordHash);
+        
+        // Si no hay usuarios O necesita migración, crear los por defecto
+        if (state.usuarios.length === 0 || needsMigration) {
           const hashedUsers: Usuario[] = [];
           for (const user of DEFAULT_USERS) {
             const passwordHash = await hashPassword(user.password);

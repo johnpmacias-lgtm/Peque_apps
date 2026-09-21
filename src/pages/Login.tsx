@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { Lock, User, AlertCircle, Moon, Sun } from 'lucide-react';
+import { Lock, User, AlertCircle, Moon, Sun, Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const login = useStore(s => s.login);
@@ -119,10 +120,10 @@ export default function Login() {
               <div className="relative">
                 <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 ${tema === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} size={18} />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className={`w-full pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition ${
+                  className={`w-full pl-10 pr-12 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition ${
                     tema === 'dark'
                       ? 'bg-gray-700/50 border border-gray-600/50 text-white placeholder-gray-500'
                       : 'bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400'
@@ -130,6 +131,18 @@ export default function Login() {
                   placeholder="••••••••"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg transition ${
+                    tema === 'dark'
+                      ? 'text-gray-400 hover:text-white hover:bg-gray-600/50'
+                      : 'text-gray-400 hover:text-gray-700 hover:bg-gray-200'
+                  }`}
+                  title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 
@@ -186,17 +199,77 @@ export default function Login() {
                 </button>
               ))}
             </div>
-            <div className={`mt-3 p-2 rounded-lg text-xs ${tema === 'dark' ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-100 text-gray-600'}`}>
-              <p className="font-semibold mb-1">Contraseñas de prueba:</p>
-              <p>• Admin: <code className="bg-gray-800 px-1 rounded">Admin1</code></p>
-              <p>• Mesero: <code className="bg-gray-800 px-1 rounded">Mesero1</code></p>
-              <p>• Cocina: <code className="bg-gray-800 px-1 rounded">Cocina1</code></p>
+            
+            {/* Credenciales de prueba */}
+            <div className={`mt-4 p-3 rounded-xl ${
+              tema === 'dark' ? 'bg-amber-500/5 border border-amber-500/20' : 'bg-amber-50 border border-amber-200'
+            }`}>
+              <p className={`text-xs font-semibold mb-2 ${tema === 'dark' ? 'text-amber-400' : 'text-amber-700'}`}>
+                🔑 Credenciales de Acceso:
+              </p>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className={tema === 'dark' ? 'text-gray-300' : 'text-gray-700'}>
+                    👤 <strong>Carlos Admin</strong>
+                  </span>
+                  <code className={`px-2 py-0.5 rounded font-mono ${
+                    tema === 'dark' ? 'bg-gray-700 text-amber-400' : 'bg-white text-amber-700 border border-amber-200'
+                  }`}>
+                    Admin1
+                  </code>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className={tema === 'dark' ? 'text-gray-300' : 'text-gray-700'}>
+                    🍽️ <strong>María Mesero</strong>
+                  </span>
+                  <code className={`px-2 py-0.5 rounded font-mono ${
+                    tema === 'dark' ? 'bg-gray-700 text-amber-400' : 'bg-white text-amber-700 border border-amber-200'
+                  }`}>
+                    Mesero1
+                  </code>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className={tema === 'dark' ? 'text-gray-300' : 'text-gray-700'}>
+                    👨‍🍳 <strong>Chef Roberto</strong>
+                  </span>
+                  <code className={`px-2 py-0.5 rounded font-mono ${
+                    tema === 'dark' ? 'bg-gray-700 text-amber-400' : 'bg-white text-amber-700 border border-amber-200'
+                  }`}>
+                    Cocina1
+                  </code>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className={tema === 'dark' ? 'text-gray-300' : 'text-gray-700'}>
+                    🍽️ <strong>Ana López</strong>
+                  </span>
+                  <code className={`px-2 py-0.5 rounded font-mono ${
+                    tema === 'dark' ? 'bg-gray-700 text-amber-400' : 'bg-white text-amber-700 border border-amber-200'
+                  }`}>
+                    Mesero1
+                  </code>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (confirm('¿Resetear todos los datos? Se perderán los cambios guardados.')) {
+                    localStorage.clear();
+                    window.location.reload();
+                  }
+                }}
+                className={`mt-3 w-full text-xs py-2 rounded-lg transition ${
+                  tema === 'dark' 
+                    ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20' 
+                    : 'bg-red-50 hover:bg-red-100 text-red-600 border border-red-200'
+                }`}
+              >
+                🔄 Resetear Datos (si no puedes entrar)
+              </button>
             </div>
           </div>
         </div>
 
         <p className={`text-center text-xs mt-6 ${tema === 'dark' ? 'text-gray-600' : 'text-gray-400'}`}>
-          v1.0.0 — Sistema POS para Restaurantes
+          v2.0.0 — Sistema POS para Restaurantes
         </p>
       </div>
     </div>
