@@ -1,0 +1,209 @@
+import { create } from 'zustand';
+import { Usuario, ConfiguracionRestaurante, Ingrediente, Plato, Mesa, Pedido, PedidoItem, EstadoPedido, AlertaInventario } from '../types';
+import { usuarios, configuracion, ingredientes as ingredientesInit, platos as platosInit, mesas as mesasInit, pedidosIniciales, platoIngredientes } from '../data/mockData';
+
+interface AppState {
+  // Auth
+  currentUser: Usuario | null;
+  login: (email: string, password: string) => boolean;
+  logout: () => void;
+
+  // Config
+  restauranteConfig: ConfiguracionRestaurante;
+  updateConfig: (config: Partial<ConfiguracionRestaurante>) => void;
+
+  // Inventario
+  ingredientes: Ingrediente[];
+  platos: Plato[];
+  mesas: Mesa[];
+  pedidos: Pedido[];
+  alertas: AlertaInventario[];
+
+  // Acciones
+  addPedido: (mesaId: number, items: { platoId: number; cantidad: number; notas: string }[], notas: string) => void;
+  updatePedidoItemEstado: (pedidoId: number, itemId: number, estado: EstadoPedido) => void;
+  updatePedidoEstado: (pedidoId: number, estado: EstadoPedido) => void;
+  updateMesaEstado: (mesaId: number, estado: Mesa['estado']) => void;
+  addIngrediente: (ingrediente: Omit<Ingrediente, 'id'>) => void;
+  updateIngredienteStock: (id: number, cantidad: number) => void;
+  addPlato: (plato: Omit<Plato, 'id'>) => void;
+  descontarInventario: (pedidoId: number) => void;
+  generarAlertas: () => void;
+}
+
+export const useStore = create<AppState>((set, get) => ({
+  // Auth
+  currentUser: null,
+  login: (email: string, password: string) => {
+    const user = usuarios.find(u => u.email === email && u.password === password && u.activo);
+    if (user) {
+      set({ currentUser: user });
+      return true;
+    }
+    return false;
+  },
+  logout: () => set({ currentUser: null }),
+
+  // Config
+  restauranteConfig: configuracion,
+  updateConfig: (config) => set(state => ({
+    restauranteConfig: { ...state.restauranteConfig, ...config }
+  })),
+
+  // Data
+  ingredientes: ingredientesInit,
+  platos: platosInit,
+  mesas: mesasInit,
+  pedidos: pedidosIniciales,
+  alertas: [],
+
+  // Acciones
+  addPedido: (mesaId, items, notas) => {
+    const state = get();
+    const mesa = state.mesas.find(m => m.id === mesaId);
+    if (!mesa || !state.currentUser) return;
+
+    const newItems: PedidoItem[] = items.map((item, idx) => {
+      const plato = state.platos.find(p => p.id === item.platoId);
+      return {
+        id: Date.now() + idx,
+        plato_id: item.platoId,
+        plato_nombre: plato?.nombre || '',
+        cantidad: item.cantidad,
+        notas: item.notas,
+        estado: 'pendiente' as EstadoPedido,
+      };
+    });
+
+    const total = items.reduce((sum, item) => {
+      const plato = state.platos.find(p => p.id === item.platoId);
+      return sum + (plato?.precio || 0) * item.cantidad;
+    }, 0);
+
+    const newPedido: Pedido = {
+      id: Date.now(),
+      mesa_id: mesaId,
+      mesa_numero: mesa.numero,
+      mesero_id: state.currentUser.id,
+      mesero_nombre: state.currentUser.nombre,
+      items: newItems,
+      estado: 'pendiente',
+      fecha_creacion: new Date(),
+      fecha_actualizacion: new Date(),
+      total,
+      notas_generales: notas,
+    };
+
+    set(state => ({
+      pedidos: [...state.pedidos, newPedido],
+      mesas: state.mesas.map(m => m.id === mesaId ? { ...m, estado: 'ocupada' as const } : m),
+    }));
+  },
+
+  updatePedidoItemEstado: (pedidoId, itemId, estado) => {
+    set(state => ({
+      pedidos: state.pedidos.map(p => {
+        if (p.id !== pedidoId) return p;
+        const newItems = p.items.map(item =>
+          item.id === itemId ? { ...item, estado } : item
+        );
+        const allListo = newItems.every(i => i.estado === 'listo' || i.estado === 'servido' || i.estado === 'pagado');
+        return {
+          ...p,
+          items: newItems,
+          estado: allListo ? 'listo' : p.estado,
+          fecha_actualizacion: new Date(),
+        };
+      }),
+    }));
+  },
+
+  updatePedidoEstado: (pedidoId, estado) => {
+    set(state => ({
+      pedidos: state.pedidos.map(p =>
+        p.id === pedidoId
+          ? { ...p, estado, fecha_actualizacion: new Date(), items: p.items.map(i => ({ ...i, estado })) }
+          : p
+      ),
+    }));
+
+    if (estado === 'pagado') {
+      get().descontarInventario(pedidoId);
+    }
+  },
+
+  updateMesaEstado: (mesaId, estado) => {
+    set(state => ({
+      mesas: state.mesas.map(m => m.id === mesaId ? { ...m, estado } : m),
+    }));
+  },
+
+  addIngrediente: (ingrediente) => {
+    set(state => ({
+      ingredientes: [...state.ingredientes, { ...ingrediente, id: Date.now() }],
+    }));
+    get().generarAlertas();
+  },
+
+  updateIngredienteStock: (id, cantidad) => {
+    set(state => ({
+      ingredientes: state.ingredientes.map(i =>
+        i.id === id ? { ...i, stock_actual: i.stock_actual + cantidad } : i
+      ),
+    }));
+    get().generarAlertas();
+  },
+
+  addPlato: (plato) => {
+    set(state => ({
+      platos: [...state.platos, { ...plato, id: Date.now() }],
+    }));
+  },
+
+  descontarInventario: (pedidoId) => {
+    const state = get();
+    const pedido = state.pedidos.find(p => p.id === pedidoId);
+    if (!pedido) return;
+
+    const nuevosIngredientes = [...state.ingredientes];
+
+    pedido.items.forEach(item => {
+      const receta = platoIngredientes.filter(pi => pi.plato_id === item.plato_id);
+      receta.forEach(r => {
+        const idx = nuevosIngredientes.findIndex(i => i.id === r.ingrediente_id);
+        if (idx !== -1) {
+          nuevosIngredientes[idx] = {
+            ...nuevosIngredientes[idx],
+            stock_actual: Math.max(0, nuevosIngredientes[idx].stock_actual - (r.cantidad * item.cantidad)),
+          };
+        }
+      });
+    });
+
+    set({ ingredientes: nuevosIngredientes });
+    get().generarAlertas();
+  },
+
+  generarAlertas: () => {
+    const state = get();
+    const alertas: AlertaInventario[] = [];
+
+    state.ingredientes.forEach(ing => {
+      if (ing.stock_actual <= ing.stock_minimo) {
+        const nivel = ing.stock_actual <= ing.stock_minimo * 0.3 ? 'critical' : 'warning';
+        alertas.push({
+          id: ing.id,
+          ingrediente_id: ing.id,
+          ingrediente_nombre: ing.nombre,
+          stock_actual: ing.stock_actual,
+          stock_minimo: ing.stock_minimo,
+          mensaje: `Stock bajo: ${ing.nombre} (${ing.stock_actual}${ing.unidad_medida} / mín: ${ing.stock_minimo}${ing.unidad_medida})`,
+          nivel,
+          fecha: new Date(),
+        });
+      }
+    });
+
+    set({ alertas });
+  },
+}));
