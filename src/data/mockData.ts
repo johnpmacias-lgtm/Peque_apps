@@ -4,10 +4,10 @@ import { Usuario, ConfiguracionRestaurante, Ingrediente, Plato, PlatoIngrediente
 // USUARIOS (contraseñas en texto plano para demo)
 // ============================================
 export const usuarios: Usuario[] = [
-  { id: 1, nombre: 'Carlos Admin', email: 'admin@restaurante.com', password: 'admin123', rol: 'admin', activo: true },
-  { id: 2, nombre: 'María Mesero', email: 'mesero@restaurante.com', password: 'mesero123', rol: 'mesero', activo: true },
-  { id: 3, nombre: 'Chef Roberto', email: 'cocina@restaurante.com', password: 'cocina123', rol: 'cocina', activo: true },
-  { id: 4, nombre: 'Ana López', email: 'ana@restaurante.com', password: 'mesero123', rol: 'mesero', activo: true },
+  { id: 1, nombre: 'Carlos Admin', password: 'admin123', rol: 'admin', activo: true },
+  { id: 2, nombre: 'María Mesero', password: 'mesero123', rol: 'mesero', activo: true },
+  { id: 3, nombre: 'Chef Roberto', password: 'cocina123', rol: 'cocina', activo: true },
+  { id: 4, nombre: 'Ana López', password: 'mesero123', rol: 'mesero', activo: true },
 ];
 
 // ============================================

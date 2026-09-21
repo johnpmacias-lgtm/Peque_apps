@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { ShoppingBag, Clock, CheckCircle2, XCircle, DollarSign } from 'lucide-react';
+import { ShoppingBag, Clock, DollarSign } from 'lucide-react';
 import { EstadoPedido } from '../types';
 
 export default function Orders() {
-  const { pedidos, updatePedidoEstado, restauranteConfig } = useStore();
+  const { pedidos, updatePedidoEstado, restauranteConfig, tema } = useStore();
   const [filter, setFilter] = useState<string>('all');
+  const isDark = tema === 'dark';
 
   const filteredPedidos = pedidos.filter(p => {
     if (filter === 'all') return true;
@@ -49,11 +50,11 @@ export default function Orders() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className={`text-2xl font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
             <ShoppingBag className="text-amber-400" size={24} />
             Gestión de Pedidos
           </h1>
-          <p className="text-gray-400 mt-1">Historial y estado de pedidos</p>
+          <p className={`mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Historial y estado de pedidos</p>
         </div>
       </div>
 
@@ -66,7 +67,9 @@ export default function Orders() {
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
               filter === f
                 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                : 'bg-gray-800/50 text-gray-400 border border-gray-700/30 hover:text-white'
+                : isDark
+                  ? 'bg-gray-800/50 text-gray-400 border border-gray-700/30 hover:text-white'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:border-gray-300'
             }`}
           >
             {f === 'all' ? 'Todos' : getEstadoLabel(f as EstadoPedido)}
@@ -77,21 +80,25 @@ export default function Orders() {
       {/* Orders List */}
       <div className="space-y-3">
         {filteredPedidos.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className={`text-center py-12 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
             <ShoppingBag size={48} className="mx-auto mb-3 opacity-30" />
             <p>No hay pedidos con este filtro</p>
           </div>
         ) : (
           filteredPedidos.map(pedido => (
-            <div key={pedido.id} className="bg-gray-800/50 border border-gray-700/50 rounded-2xl p-5">
+            <div key={pedido.id} className={`rounded-2xl p-5 border transition ${
+              isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white border-gray-200 shadow-sm'
+            }`}>
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 font-bold text-lg">
                     M{pedido.mesa_numero}
                   </div>
                   <div>
-                    <h3 className="text-white font-semibold">Pedido #{pedido.id.toString().slice(-4)}</h3>
-                    <p className="text-xs text-gray-500">
+                    <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      Pedido #{pedido.id.toString().slice(-4)}
+                    </h3>
+                    <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                       {formatTime(pedido.fecha_creacion)} — {pedido.mesero_nombre}
                     </p>
                   </div>
@@ -100,19 +107,23 @@ export default function Orders() {
                   <span className={`text-xs px-2.5 py-1 rounded-full border ${getStatusBadge(pedido.estado)}`}>
                     {getEstadoLabel(pedido.estado)}
                   </span>
-                  <span className="text-lg font-bold text-white">${pedido.total} {restauranteConfig.moneda}</span>
+                  <span className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    ${pedido.total} {restauranteConfig.moneda}
+                  </span>
                 </div>
               </div>
 
               {/* Items */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
                 {pedido.items.map(item => (
-                  <div key={item.id} className="flex items-center justify-between p-2.5 bg-gray-900/50 rounded-lg">
+                  <div key={item.id} className={`flex items-center justify-between p-2.5 rounded-lg ${
+                    isDark ? 'bg-gray-900/50' : 'bg-gray-50'
+                  }`}>
                     <div className="flex items-center gap-2">
                       <span className="text-xs bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded font-mono">
                         x{item.cantidad}
                       </span>
-                      <span className="text-sm text-white">{item.plato_nombre}</span>
+                      <span className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>{item.plato_nombre}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       {item.notas && (
@@ -128,13 +139,13 @@ export default function Orders() {
 
               {/* Notes */}
               {pedido.notas_generales && (
-                <div className="p-2 bg-amber-500/5 border border-amber-500/20 rounded-lg mb-4">
-                  <p className="text-xs text-amber-400">⚠️ {pedido.notas_generales}</p>
+                <div className={`p-2 rounded-lg mb-4 ${isDark ? 'bg-amber-500/5 border border-amber-500/20' : 'bg-amber-50 border border-amber-200'}`}>
+                  <p className={`text-xs ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>⚠️ {pedido.notas_generales}</p>
                 </div>
               )}
 
               {/* Actions */}
-              <div className="flex items-center gap-2 pt-3 border-t border-gray-700/30">
+              <div className={`flex items-center gap-2 pt-3 border-t ${isDark ? 'border-gray-700/30' : 'border-gray-200'}`}>
                 {pedido.estado === 'pendiente' && (
                   <>
                     <button
@@ -168,8 +179,8 @@ export default function Orders() {
                     Cobrar / Pagado
                   </button>
                 )}
-                <span className="ml-auto text-xs text-gray-500">
-                  <Clock size={12} className="inline mr-1" />
+                <span className={`ml-auto text-xs flex items-center gap-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  <Clock size={12} />
                   Actualizado: {formatTime(pedido.fecha_actualizacion)}
                 </span>
               </div>

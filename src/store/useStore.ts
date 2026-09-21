@@ -1,12 +1,23 @@
 import { create } from 'zustand';
 import { Usuario, ConfiguracionRestaurante, Ingrediente, Plato, Mesa, Pedido, PedidoItem, EstadoPedido, AlertaInventario } from '../types';
-import { usuarios, configuracion, ingredientes as ingredientesInit, platos as platosInit, mesas as mesasInit, pedidosIniciales, platoIngredientes } from '../data/mockData';
+import { usuarios as usuariosInit, configuracion, ingredientes as ingredientesInit, platos as platosInit, mesas as mesasInit, pedidosIniciales, platoIngredientes } from '../data/mockData';
+
+type Tema = 'light' | 'dark';
 
 interface AppState {
   // Auth
   currentUser: Usuario | null;
-  login: (email: string, password: string) => boolean;
+  usuarios: Usuario[];
+  login: (username: string, password: string) => boolean;
   logout: () => void;
+  addUser: (user: Omit<Usuario, 'id'>) => void;
+  updateUser: (id: number, data: Partial<Usuario>) => void;
+  deleteUser: (id: number) => void;
+
+  // Tema
+  tema: Tema;
+  toggleTema: () => void;
+  setTema: (tema: Tema) => void;
 
   // Config
   restauranteConfig: ConfiguracionRestaurante;
@@ -18,6 +29,10 @@ interface AppState {
   mesas: Mesa[];
   pedidos: Pedido[];
   alertas: AlertaInventario[];
+
+  // Factura
+  ultimaFactura: Pedido | null;
+  setUltimaFactura: (pedido: Pedido | null) => void;
 
   // Acciones
   addPedido: (mesaId: number, items: { platoId: number; cantidad: number; notas: string }[], notas: string) => void;
@@ -34,15 +49,39 @@ interface AppState {
 export const useStore = create<AppState>((set, get) => ({
   // Auth
   currentUser: null,
-  login: (email: string, password: string) => {
-    const user = usuarios.find(u => u.email === email && u.password === password && u.activo);
+  usuarios: usuariosInit,
+  login: (username: string, password: string) => {
+    const user = get().usuarios.find(u => u.nombre === username && u.password === password && u.activo);
     if (user) {
       set({ currentUser: user });
       return true;
     }
     return false;
   },
-  logout: () => set({ currentUser: null }),
+  logout: () => set({ currentUser: null, ultimaFactura: null }),
+  
+  addUser: (userData) => {
+    set(state => ({
+      usuarios: [...state.usuarios, { ...userData, id: Date.now() }]
+    }));
+  },
+  
+  updateUser: (id, data) => {
+    set(state => ({
+      usuarios: state.usuarios.map(u => u.id === id ? { ...u, ...data } : u)
+    }));
+  },
+  
+  deleteUser: (id) => {
+    set(state => ({
+      usuarios: state.usuarios.filter(u => u.id !== id)
+    }));
+  },
+
+  // Tema
+  tema: 'dark',
+  toggleTema: () => set(state => ({ tema: state.tema === 'dark' ? 'light' : 'dark' })),
+  setTema: (tema) => set({ tema }),
 
   // Config
   restauranteConfig: configuracion,
@@ -56,6 +95,10 @@ export const useStore = create<AppState>((set, get) => ({
   mesas: mesasInit,
   pedidos: pedidosIniciales,
   alertas: [],
+
+  // Factura
+  ultimaFactura: null,
+  setUltimaFactura: (pedido) => set({ ultimaFactura: pedido }),
 
   // Acciones
   addPedido: (mesaId, items, notas) => {
@@ -119,6 +162,9 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updatePedidoEstado: (pedidoId, estado) => {
+    const state = get();
+    const pedido = state.pedidos.find(p => p.id === pedidoId);
+    
     set(state => ({
       pedidos: state.pedidos.map(p =>
         p.id === pedidoId
@@ -127,8 +173,9 @@ export const useStore = create<AppState>((set, get) => ({
       ),
     }));
 
-    if (estado === 'pagado') {
+    if (estado === 'pagado' && pedido) {
       get().descontarInventario(pedidoId);
+      get().setUltimaFactura(pedido);
     }
   },
 

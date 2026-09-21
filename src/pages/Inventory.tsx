@@ -6,12 +6,13 @@ import {
 } from 'lucide-react';
 
 export default function Inventory() {
-  const { ingredientes, updateIngredienteStock, addIngrediente, alertas, platos, generarAlertas } = useStore();
+  const { ingredientes, updateIngredienteStock, addIngrediente, alertas, platos, generarAlertas, tema } = useStore();
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [restockId, setRestockId] = useState<number | null>(null);
   const [restockAmount, setRestockAmount] = useState('');
+  const isDark = tema === 'dark';
 
   const categories = [...new Set(ingredientes.map(i => i.categoria))];
 
@@ -100,13 +101,17 @@ export default function Inventory() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar ingrediente..."
-            className="w-full pl-9 pr-4 py-2.5 bg-gray-800/50 border border-gray-700/50 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+            className={`w-full pl-9 pr-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/30 ${
+              isDark ? 'bg-gray-800/50 border border-gray-700/50 text-white placeholder-gray-500' : 'bg-white border border-gray-300 text-gray-900 placeholder-gray-400'
+            }`}
           />
         </div>
         <select
           value={categoryFilter}
           onChange={e => setCategoryFilter(e.target.value)}
-          className="px-4 py-2.5 bg-gray-800/50 border border-gray-700/50 rounded-xl text-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+          className={`px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/30 ${
+            isDark ? 'bg-gray-800/50 border border-gray-700/50 text-gray-300' : 'bg-white border border-gray-300 text-gray-900'
+          }`}
         >
           <option value="all">Todas las categorías</option>
           {categories.map(c => (
@@ -116,27 +121,27 @@ export default function Inventory() {
       </div>
 
       {/* Table */}
-      <div className="bg-gray-800/50 border border-gray-700/50 rounded-2xl overflow-hidden">
+      <div className={`rounded-2xl overflow-hidden border ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white border-gray-200 shadow-sm'}`}>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-700/50">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Ingrediente</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Categoría</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Stock Actual</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Stock Mínimo</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Nivel</th>
-                <th className="text-center px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Acciones</th>
+              <tr className={`border-b ${isDark ? 'border-gray-700/50' : 'border-gray-200'}`}>
+                <th className={`text-left px-5 py-3 text-xs font-semibold uppercase ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Ingrediente</th>
+                <th className={`text-left px-5 py-3 text-xs font-semibold uppercase ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Categoría</th>
+                <th className={`text-right px-5 py-3 text-xs font-semibold uppercase ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Stock Actual</th>
+                <th className={`text-right px-5 py-3 text-xs font-semibold uppercase ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Stock Mínimo</th>
+                <th className={`text-left px-5 py-3 text-xs font-semibold uppercase ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Nivel</th>
+                <th className={`text-center px-5 py-3 text-xs font-semibold uppercase ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map(ing => (
-                <tr key={ing.id} className="border-b border-gray-700/30 hover:bg-gray-700/20 transition">
+                <tr key={ing.id} className={`border-b transition ${isDark ? 'border-gray-700/30 hover:bg-gray-700/20' : 'border-gray-100 hover:bg-gray-50'}`}>
                   <td className="px-5 py-3">
-                    <span className="text-sm font-medium text-white">{ing.nombre}</span>
+                    <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{ing.nombre}</span>
                   </td>
                   <td className="px-5 py-3">
-                    <span className="text-xs bg-gray-700/50 text-gray-300 px-2 py-1 rounded-lg">{ing.categoria}</span>
+                    <span className={`text-xs px-2 py-1 rounded-lg ${isDark ? 'bg-gray-700/50 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>{ing.categoria}</span>
                   </td>
                   <td className="px-5 py-3 text-right">
                     <span className={`text-sm font-mono font-semibold ${

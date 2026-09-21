@@ -3,11 +3,12 @@ import { useStore } from '../store/useStore';
 import { UtensilsCrossed, Plus, Users as UsersIcon } from 'lucide-react';
 
 export default function Tables() {
-  const { mesas, pedidos, updateMesaEstado, platos, addPedido, currentUser } = useStore();
+  const { mesas, pedidos, updateMesaEstado, platos, addPedido, currentUser, tema } = useStore();
   const [selectedMesa, setSelectedMesa] = useState<number | null>(null);
   const [orderItems, setOrderItems] = useState<{ platoId: number; cantidad: number; notas: string }[]>([]);
   const [notasGenerales, setNotasGenerales] = useState('');
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const isDark = tema === 'dark';
 
   const handleSelectMesa = (mesaId: number) => {
     const mesa = mesas.find(m => m.id === mesaId);
@@ -69,11 +70,11 @@ export default function Tables() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className={`text-2xl font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
             <UtensilsCrossed className="text-amber-400" size={24} />
             Gestión de Mesas
           </h1>
-          <p className="text-gray-400 mt-1">Selecciona una mesa libre para tomar un pedido</p>
+          <p className={`mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Selecciona una mesa libre para tomar un pedido</p>
         </div>
       </div>
 
@@ -128,18 +129,18 @@ export default function Tables() {
       {/* Order Modal */}
       {showOrderModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div className={`rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
             {/* Modal Header */}
-            <div className="p-5 border-b border-gray-700/50 flex items-center justify-between">
+            <div className={`p-5 border-b flex items-center justify-between ${isDark ? 'border-gray-700/50' : 'border-gray-200'}`}>
               <div>
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   Nuevo Pedido — Mesa {mesas.find(m => m.id === selectedMesa)?.numero}
                 </h3>
-                <p className="text-sm text-gray-400">Mesero: {currentUser?.nombre}</p>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Mesero: {currentUser?.nombre}</p>
               </div>
               <button
                 onClick={() => setShowOrderModal(false)}
-                className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition"
+                className={`p-2 rounded-lg transition ${isDark ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}
               >
                 ✕
               </button>
@@ -201,8 +202,8 @@ export default function Tables() {
               </div>
 
               {/* Order Summary */}
-              <div className="w-72 border-l border-gray-700/50 p-5 flex flex-col bg-gray-900/30">
-                <h4 className="text-sm font-semibold text-gray-400 uppercase mb-3">Pedido</h4>
+              <div className={`w-72 border-l p-5 flex flex-col ${isDark ? 'border-gray-700/50 bg-gray-900/30' : 'border-gray-200 bg-gray-50'}`}>
+                <h4 className={`text-sm font-semibold uppercase mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Pedido</h4>
                 <div className="flex-1 overflow-y-auto space-y-2">
                   {orderItems.length === 0 ? (
                     <p className="text-sm text-gray-500 text-center py-8">Agrega platos al pedido</p>

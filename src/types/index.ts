@@ -7,7 +7,6 @@ export type UserRole = 'admin' | 'mesero' | 'cocina';
 export interface Usuario {
   id: number;
   nombre: string;
-  email: string;
   password: string; // En producción: bcrypt hash
   rol: UserRole;
   activo: boolean;

@@ -4,9 +4,10 @@ import { Clock, ChefHat, CheckCircle2, AlertCircle, Bell, Timer } from 'lucide-r
 import { EstadoPedido } from '../types';
 
 export default function Kitchen() {
-  const { pedidos, updatePedidoItemEstado, updatePedidoEstado } = useStore();
+  const { pedidos, updatePedidoItemEstado, updatePedidoEstado, tema } = useStore();
   const [notification, setNotification] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const isDark = tema === 'dark';
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -50,20 +51,20 @@ export default function Kitchen() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-900">
+    <div className={`h-screen flex flex-col ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Header */}
-      <div className="bg-gray-800/80 border-b border-gray-700/50 px-6 py-4 flex items-center justify-between">
+      <div className={`border-b px-6 py-4 flex items-center justify-between ${isDark ? 'bg-gray-800/80 border-gray-700/50' : 'bg-white border-gray-200 shadow-sm'}`}>
         <div className="flex items-center gap-3">
           <ChefHat className="text-amber-400" size={24} />
           <div>
-            <h1 className="text-xl font-bold text-white">Pantalla de Cocina</h1>
-            <p className="text-xs text-gray-400">Pedidos en tiempo real</p>
+            <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Pantalla de Cocina</h1>
+            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Pedidos en tiempo real</p>
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-gray-900/50 px-3 py-1.5 rounded-lg">
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${isDark ? 'bg-gray-900/50' : 'bg-gray-100'}`}>
             <Timer size={14} className="text-amber-400" />
-            <span className="text-sm text-white font-mono">
+            <span className={`text-sm font-mono ${isDark ? 'text-white' : 'text-gray-900'}`}>
               {currentTime.toLocaleTimeString('es-MX')}
             </span>
           </div>
@@ -178,9 +179,9 @@ interface KanbanColumnProps {
 
 function KanbanColumn({ title, count, color, children }: KanbanColumnProps) {
   const colorClasses: Record<string, string> = {
-    yellow: 'border-yellow-500/30 bg-yellow-500/5',
-    blue: 'border-blue-500/30 bg-blue-500/5',
-    green: 'border-green-500/30 bg-green-500/5',
+    yellow: 'border-yellow-500/30 bg-yellow-500/5 dark:bg-yellow-500/5',
+    blue: 'border-blue-500/30 bg-blue-500/5 dark:bg-blue-500/5',
+    green: 'border-green-500/30 bg-green-500/5 dark:bg-green-500/5',
   };
   const badgeClasses: Record<string, string> = {
     yellow: 'bg-yellow-500/20 text-yellow-400',
