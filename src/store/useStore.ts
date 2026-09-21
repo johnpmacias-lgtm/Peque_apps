@@ -42,6 +42,8 @@ interface AppState {
   addIngrediente: (ingrediente: Omit<Ingrediente, 'id'>) => void;
   updateIngredienteStock: (id: number, cantidad: number) => void;
   addPlato: (plato: Omit<Plato, 'id'>) => void;
+  updatePlato: (id: number, data: Partial<Plato>) => void;
+  deletePlato: (id: number) => void;
   descontarInventario: (pedidoId: number) => void;
   generarAlertas: () => void;
 }
@@ -204,6 +206,18 @@ export const useStore = create<AppState>((set, get) => ({
   addPlato: (plato) => {
     set(state => ({
       platos: [...state.platos, { ...plato, id: Date.now() }],
+    }));
+  },
+
+  updatePlato: (id, data) => {
+    set(state => ({
+      platos: state.platos.map(p => p.id === id ? { ...p, ...data } : p)
+    }));
+  },
+
+  deletePlato: (id) => {
+    set(state => ({
+      platos: state.platos.filter(p => p.id !== id)
     }));
   },
 

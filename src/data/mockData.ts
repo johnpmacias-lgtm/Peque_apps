@@ -49,14 +49,27 @@ export const ingredientes: Ingrediente[] = [
 // PLATOS
 // ============================================
 export const platos: Plato[] = [
-  { id: 1, nombre: 'Hamburguesa Clásica', precio: 120, categoria: 'Hamburguesas', descripcion: 'Carne 150g, queso, lechuga, tomate', disponible: true },
-  { id: 2, nombre: 'Hamburguesa Doble', precio: 165, categoria: 'Hamburguesas', descripcion: 'Doble carne, doble queso, bacon', disponible: true },
+  { id: 1, nombre: 'Hamburguesa Clásica', precio: 120, categoria: 'Comida Rápida', descripcion: 'Carne 150g, queso, lechuga, tomate', disponible: true },
+  { id: 2, nombre: 'Hamburguesa Doble', precio: 165, categoria: 'Comida Rápida', descripcion: 'Doble carne, doble queso, bacon', disponible: true },
   { id: 3, nombre: 'Spaghetti Bolognesa', precio: 95, categoria: 'Pastas', descripcion: 'Pasta con salsa de carne', disponible: true },
   { id: 4, nombre: 'Ensalada César', precio: 75, categoria: 'Ensaladas', descripcion: 'Lechuga, pollo, crutones, aderezo', disponible: true },
   { id: 5, nombre: 'Tacos de Pollo (3pz)', precio: 85, categoria: 'Mexicana', descripcion: 'Tortilla, pollo, cebolla, cilantro', disponible: true },
   { id: 6, nombre: 'Quesadilla Grande', precio: 70, categoria: 'Mexicana', descripcion: 'Tortilla grande con queso y pollo', disponible: true },
   { id: 7, nombre: 'Pollo a la Plancha', precio: 130, categoria: 'Platos Fuertes', descripcion: 'Pechuga con arroz y ensalada', disponible: true },
   { id: 8, nombre: 'Nachos Supremos', precio: 110, categoria: 'Entradas', descripcion: 'Nachos con queso, frijoles, crema', disponible: true },
+  { id: 9, nombre: 'Café Americano', precio: 35, categoria: 'Café', descripcion: 'Café de grano recién molido', disponible: true },
+  { id: 10, nombre: 'Café Latte', precio: 45, categoria: 'Café', descripcion: 'Espresso con leche vaporizada', disponible: true },
+  { id: 11, nombre: 'Café Cappuccino', precio: 50, categoria: 'Café', descripcion: 'Espresso, leche y espuma', disponible: true },
+  { id: 12, nombre: 'Té Verde', precio: 30, categoria: 'Té', descripcion: 'Té verde orgánico', disponible: true },
+  { id: 13, nombre: 'Té de Manzanilla', precio: 30, categoria: 'Té', descripcion: 'Infusión de manzanilla natural', disponible: true },
+  { id: 14, nombre: 'Té Chai Latte', precio: 45, categoria: 'Té', descripcion: 'Té chai con leche y especias', disponible: true },
+  { id: 15, nombre: 'Panqué con Mermelada', precio: 55, categoria: 'Merienda', descripcion: 'Panqué casero con mermelada artesanal', disponible: true },
+  { id: 16, nombre: 'Sándwich de Jamón', precio: 65, categoria: 'Merienda', descripcion: 'Jamón, queso, lechuga y tomate', disponible: true },
+  { id: 17, nombre: 'Croissant', precio: 40, categoria: 'Merienda', descripcion: 'Croissant de mantequilla', disponible: true },
+  { id: 18, nombre: 'Cheesecake', precio: 70, categoria: 'Postres', descripcion: 'Cheesecake de frutos rojos', disponible: true },
+  { id: 19, nombre: 'Pastel de Chocolate', precio: 75, categoria: 'Postres', descripcion: 'Pastel de chocolate con ganache', disponible: true },
+  { id: 20, nombre: 'Limonada Natural', precio: 35, categoria: 'Bebidas', descripcion: 'Limonada fresca con hierbabuena', disponible: true },
+  { id: 21, nombre: 'Jugo de Naranja', precio: 40, categoria: 'Bebidas', descripcion: 'Jugo de naranja natural', disponible: true },
 ];
 
 // ============================================

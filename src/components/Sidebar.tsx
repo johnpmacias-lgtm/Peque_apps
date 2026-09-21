@@ -2,7 +2,7 @@ import React from 'react';
 import { useStore } from '../store/useStore';
 import {
   LayoutDashboard, UtensilsCrossed, ChefHat, ShoppingBag,
-  Settings, LogOut, Users, Package, Sun, Moon
+  Settings, LogOut, Users, Package, Sun, Moon, BookOpen
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -17,6 +17,7 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     { id: 'dashboard', label: 'Panel', icon: LayoutDashboard, roles: ['admin', 'mesero', 'cocina'] },
     { id: 'mesas', label: 'Mesas', icon: UtensilsCrossed, roles: ['admin', 'mesero'] },
     { id: 'cocina', label: 'Cocina', icon: ChefHat, roles: ['admin', 'cocina'] },
+    { id: 'menu', label: 'Menú', icon: BookOpen, roles: ['admin'] },
     { id: 'inventario', label: 'Inventario', icon: Package, roles: ['admin'] },
     { id: 'pedidos', label: 'Pedidos', icon: ShoppingBag, roles: ['admin', 'mesero'] },
     { id: 'usuarios', label: 'Usuarios', icon: Users, roles: ['admin'] },

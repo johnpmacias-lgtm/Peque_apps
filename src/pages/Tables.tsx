@@ -12,7 +12,7 @@ export default function Tables() {
 
   const handleSelectMesa = (mesaId: number) => {
     const mesa = mesas.find(m => m.id === mesaId);
-    if (mesa?.estado === 'libre') {
+    if (mesa?.estado === 'libre' || mesa?.estado === 'ocupada') {
       setSelectedMesa(mesaId);
       setOrderItems([]);
       setNotasGenerales('');
@@ -86,12 +86,12 @@ export default function Tables() {
             <button
               key={mesa.id}
               onClick={() => handleSelectMesa(mesa.id)}
-              disabled={mesa.estado !== 'libre'}
+              disabled={mesa.estado === 'reservada'}
               className={`relative p-5 rounded-2xl border-2 transition-all duration-200 text-left ${
                 mesa.estado === 'libre'
                   ? 'bg-green-500/5 border-green-500/30 hover:bg-green-500/10 hover:border-green-500/50 cursor-pointer'
                   : mesa.estado === 'ocupada'
-                  ? 'bg-red-500/5 border-red-500/30 cursor-not-allowed'
+                  ? 'bg-red-500/5 border-red-500/30 hover:bg-red-500/10 hover:border-red-500/50 cursor-pointer'
                   : 'bg-yellow-500/5 border-yellow-500/30 cursor-not-allowed'
               }`}
             >
@@ -119,6 +119,7 @@ export default function Tables() {
                 <div className="mt-2 pt-2 border-t border-gray-700/30">
                   <p className="text-xs text-gray-400">{pedido.items.length} items</p>
                   <p className="text-xs text-amber-400 font-semibold">${pedido.total}</p>
+                  <p className="text-xs text-blue-400 mt-1">+ Agregar pedido</p>
                 </div>
               )}
             </button>

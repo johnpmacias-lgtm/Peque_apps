@@ -27,12 +27,9 @@ export default function Login() {
     }, 500);
   };
 
-  const quickLogin = (user: { nombre: string; password: string }) => {
+  const selectUser = (user: { nombre: string }) => {
     setUsername(user.nombre);
-    setPassword(user.password);
-    setTimeout(() => {
-      login(user.nombre, user.password);
-    }, 200);
+    setPassword('');
   };
 
   const usuariosActivos = usuarios.filter(u => u.activo);
@@ -156,13 +153,13 @@ export default function Login() {
           {/* User Selection List */}
           <div className={`mt-6 pt-6 border-t ${tema === 'dark' ? 'border-gray-700/50' : 'border-gray-200'}`}>
             <p className={`text-xs mb-3 text-center ${tema === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
-              Selecciona un usuario para acceso rápido:
+              Selecciona un usuario para autocompletar:
             </p>
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {usuariosActivos.map(user => (
                 <button
                   key={user.id}
-                  onClick={() => quickLogin(user)}
+                  onClick={() => selectUser(user)}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all text-left ${
                     tema === 'dark'
                       ? 'bg-gray-700/30 hover:bg-gray-700/60 border-gray-600/30 hover:border-gray-500/50'
@@ -174,22 +171,18 @@ export default function Login() {
                     user.rol === 'cocina' ? 'bg-gradient-to-br from-amber-400 to-amber-600' :
                     'bg-gradient-to-br from-blue-400 to-blue-600'
                   }`}>
-                    {user.nombre.charAt(0)}
+                    {user.rol === 'admin' ? '👤' :
+                     user.rol === 'cocina' ? '👨‍🍳' : '🍽️'}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-medium truncate ${tema === 'dark' ? 'text-white' : 'text-gray-900'}`}>
                       {user.nombre}
                     </p>
                     <p className={`text-xs capitalize ${tema === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
-                      {user.rol === 'admin' ? '👤 Administrador' :
-                       user.rol === 'cocina' ? '👨‍🍳 Cocina' : '🍽️ Mesero'}
+                      {user.rol === 'admin' ? 'Administrador' :
+                       user.rol === 'cocina' ? 'Cocina' : 'Mesero'}
                     </p>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    tema === 'dark' ? 'bg-gray-600/50 text-gray-400' : 'bg-gray-200 text-gray-600'
-                  }`}>
-                    Click
-                  </span>
                 </button>
               ))}
             </div>

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
-import { Clock, ChefHat, CheckCircle2, AlertCircle, Bell, Timer } from 'lucide-react';
+import { Clock, ChefHat, CheckCircle2, AlertCircle, Bell, Timer, LogOut } from 'lucide-react';
 import { EstadoPedido } from '../types';
 
 export default function Kitchen() {
-  const { pedidos, updatePedidoItemEstado, updatePedidoEstado, tema } = useStore();
+  const { pedidos, updatePedidoItemEstado, updatePedidoEstado, tema, logout } = useStore();
   const [notification, setNotification] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const isDark = tema === 'dark';
@@ -75,6 +75,17 @@ export default function Kitchen() {
             </span>
             <span className="text-xs text-green-400">WebSocket Activo</span>
           </div>
+          <button
+            onClick={logout}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
+              isDark 
+                ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20' 
+                : 'bg-red-50 hover:bg-red-100 text-red-600 border border-red-200'
+            }`}
+          >
+            <LogOut size={16} />
+            Cerrar Sesión
+          </button>
         </div>
       </div>
 

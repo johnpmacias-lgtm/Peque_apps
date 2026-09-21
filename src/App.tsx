@@ -9,6 +9,7 @@ import Tables from './pages/Tables';
 import Orders from './pages/Orders';
 import ConfigPage from './pages/ConfigPage';
 import UsersPage from './pages/UsersPage';
+import MenuPage from './pages/MenuPage';
 import Sidebar from './components/Sidebar';
 import FacturaModal from './components/FacturaModal';
 
@@ -41,7 +42,7 @@ function App() {
   // Render page based on role and selection
   const renderPage = () => {
     const rolePages: Record<string, string[]> = {
-      admin: ['dashboard', 'mesas', 'cocina', 'inventario', 'pedidos', 'usuarios', 'configuracion'],
+      admin: ['dashboard', 'mesas', 'cocina', 'menu', 'inventario', 'pedidos', 'usuarios', 'configuracion'],
       mesero: ['dashboard', 'mesas', 'pedidos'],
       cocina: ['dashboard', 'cocina'],
     };
@@ -64,6 +65,8 @@ function App() {
         return <ConfigPage />;
       case 'usuarios':
         return <UsersPage />;
+      case 'menu':
+        return <MenuPage />;
       default:
         return <Dashboard />;
     }
