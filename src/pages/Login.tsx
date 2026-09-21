@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
+import { useNavigate } from 'react-router-dom';
 import { Lock, User, AlertCircle, Moon, Sun, Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
@@ -9,10 +10,28 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const login = useStore(s => s.login);
+  const currentUser = useStore(s => s.currentUser);
   const config = useStore(s => s.restauranteConfig);
   const usuarios = useStore(s => s.usuarios);
   const tema = useStore(s => s.tema);
   const toggleTema = useStore(s => s.toggleTema);
+  const navigate = useNavigate();
+
+  // 🔥 SOLUCIÓN CRÍTICA: useEffect para navegar DESPUÉS de que currentUser se actualice
+  useEffect(() => {
+    console.log('=== useEffect en Login ===');
+    console.log('currentUser:', currentUser);
+    
+    if (currentUser) {
+      console.log('✅ Usuario autenticado, navegando a /dashboard');
+      console.log('Usuario:', currentUser.nombre, 'Rol:', currentUser.rol);
+      
+      // Pequeño delay para asegurar que React procese el estado
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 100);
+    }
+  }, [currentUser, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
