@@ -18,17 +18,38 @@ export default function Login() {
   const navigate = useNavigate();
 
   // 🔥 SOLUCIÓN CRÍTICA: useEffect para navegar DESPUÉS de que currentUser se actualice
+  // REDIRECCIÓN INTELIGENTE SEGÚN ROL
   useEffect(() => {
     console.log('=== useEffect en Login ===');
     console.log('currentUser:', currentUser);
     
     if (currentUser) {
-      console.log('✅ Usuario autenticado, navegando a /dashboard');
-      console.log('Usuario:', currentUser.nombre, 'Rol:', currentUser.rol);
+      console.log('✅ Usuario autenticado:', currentUser.nombre, 'Rol:', currentUser.rol);
+      
+      // Redirección inteligente según el rol del usuario
+      let targetPath = '/';
+      
+      switch (currentUser.rol) {
+        case 'cocina':
+          targetPath = '/cocina';
+          console.log('👨‍🍳 Redirigiendo cocinero a /cocina');
+          break;
+        case 'mesero':
+          targetPath = '/mesas';
+          console.log('🍽️ Redirigiendo mesero a /mesas');
+          break;
+        case 'admin':
+          targetPath = '/dashboard';
+          console.log('👤 Redirigiendo admin a /dashboard');
+          break;
+        default:
+          targetPath = '/dashboard';
+          console.log('⚠️ Rol desconocido, redirigiendo a /dashboard');
+      }
       
       // Pequeño delay para asegurar que React procese el estado
       setTimeout(() => {
-        navigate('/', { replace: true });
+        navigate(targetPath, { replace: true });
       }, 100);
     }
   }, [currentUser, navigate]);

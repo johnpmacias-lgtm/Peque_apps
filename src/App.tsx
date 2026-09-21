@@ -14,16 +14,14 @@ import MenuPage from './pages/MenuPage';
 import Sidebar from './components/Sidebar';
 import FacturaModal from './components/FacturaModal';
 
-// Protected Route Component
-function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) {
+// Protected Route Component - Valida autenticación general
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { currentUser, isLoading } = useStore();
   const location = useLocation();
 
   console.log('=== PROTECTED ROUTE ===');
   console.log('isLoading:', isLoading);
   console.log('currentUser:', currentUser ? currentUser.nombre : 'null');
-  console.log('currentUser.rol:', currentUser?.rol);
-  console.log('allowedRoles:', allowedRoles);
 
   if (isLoading) {
     console.log('⏳ Mostrando pantalla de carga...');
@@ -39,13 +37,52 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (!allowedRoles.includes(currentUser.rol)) {
-    console.log('❌ Rol no permitido:', currentUser.rol);
-    console.log('Roles permitidos:', allowedRoles);
-    return <Navigate to="/" replace />;
+  console.log('✅ Usuario autenticado');
+  return <>{children}</>;
+}
+
+// Route Guard - Valida permisos por página específica
+function RouteGuard({ 
+  children, 
+  allowedRoles 
+}: { 
+  children: React.ReactNode;
+  allowedRoles: string[];
+}) {
+  const { currentUser } = useStore();
+  const navigate = useNavigate();
+
+  console.log('=== ROUTE GUARD ===');
+  console.log('currentUser.rol:', currentUser?.rol);
+  console.log('allowedRoles:', allowedRoles);
+
+  if (!currentUser) {
+    console.log('❌ No hay usuario');
+    return <Navigate to="/login" replace />;
   }
 
-  console.log('✅ Acceso permitido');
+  if (!allowedRoles.includes(currentUser.rol)) {
+    console.log('❌ Rol no permitido para esta página:', currentUser.rol);
+    
+    // Redirección inteligente según el rol
+    let redirectPath = '/';
+    switch (currentUser.rol) {
+      case 'cocina':
+        redirectPath = '/cocina';
+        break;
+      case 'mesero':
+        redirectPath = '/mesas';
+        break;
+      case 'admin':
+        redirectPath = '/dashboard';
+        break;
+    }
+    
+    console.log('🔄 Redirigiendo a:', redirectPath);
+    return <Navigate to={redirectPath} replace />;
+  }
+
+  console.log('✅ Acceso permitido a esta página');
   return <>{children}</>;
 }
 
@@ -86,15 +123,68 @@ function AppLayout() {
       <Sidebar currentPage={currentPage} onNavigate={handleNavigate} />
       <main className="flex-1 overflow-y-auto min-h-screen">
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/mesas" element={<Tables />} />
-          <Route path="/cocina" element={<Kitchen />} />
-          <Route path="/menu" element={<MenuPage />} />
-          <Route path="/inventario" element={<Inventory />} />
-          <Route path="/pedidos" element={<Orders />} />
-          <Route path="/usuarios" element={<UsersPage />} />
-          <Route path="/configuracion" element={<ConfigPage />} />
+          {/* Dashboard - Todos los roles */}
+          <Route path="/" element={
+            <RouteGuard allowedRoles={['admin', 'mesero', 'cocina']}>
+              <Dashboard />
+            </RouteGuard>
+          } />
+          <Route path="/dashboard" element={
+            <RouteGuard allowedRoles={['admin', 'mesero', 'cocina']}>
+              <Dashboard />
+            </RouteGuard>
+          } />
+          
+          {/* Mesas - Admin y mesero */}
+          <Route path="/mesas" element={
+            <RouteGuard allowedRoles={['admin', 'mesero']}>
+              <Tables />
+            </RouteGuard>
+          } />
+          
+          {/* Cocina - Admin y cocina */}
+          <Route path="/cocina" element={
+            <RouteGuard allowedRoles={['admin', 'cocina']}>
+              <Kitchen />
+            </RouteGuard>
+          } />
+          
+          {/* Menú - Solo admin */}
+          <Route path="/menu" element={
+            <RouteGuard allowedRoles={['admin']}>
+              <MenuPage />
+            </RouteGuard>
+          } />
+          
+          {/* Inventario - Solo admin */}
+          <Route path="/inventario" element={
+            <RouteGuard allowedRoles={['admin']}>
+              <Inventory />
+            </RouteGuard>
+          } />
+          
+          {/* Pedidos - Admin y mesero */}
+          <Route path="/pedidos" element={
+            <RouteGuard allowedRoles={['admin', 'mesero']}>
+              <Orders />
+            </RouteGuard>
+          } />
+          
+          {/* Usuarios - Solo admin */}
+          <Route path="/usuarios" element={
+            <RouteGuard allowedRoles={['admin']}>
+              <UsersPage />
+            </RouteGuard>
+          } />
+          
+          {/* Configuración - Solo admin */}
+          <Route path="/configuracion" element={
+            <RouteGuard allowedRoles={['admin']}>
+              <ConfigPage />
+            </RouteGuard>
+          } />
+          
+          {/* Ruta no encontrada - Redirigir según rol */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
@@ -123,7 +213,7 @@ function AppInitializer() {
         <Route
           path="/*"
           element={
-            <ProtectedRoute allowedRoles={['admin', 'mesero', 'cocina']}>
+            <ProtectedRoute>
               <AppLayout />
             </ProtectedRoute>
           }
