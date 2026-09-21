@@ -12,7 +12,6 @@ interface AppState {
   currentUser: Usuario | null;
   usuarios: Usuario[];
   isLoading: boolean;
-  isInitialized: boolean;
   initialize: () => Promise<void>;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
@@ -20,6 +19,7 @@ interface AppState {
   updateUser: (id: string, data: Partial<Omit<Usuario, 'id'>>) => Promise<void>;
   deleteUser: (id: string) => void;
   changePassword: (id: string, newPassword: string) => Promise<void>;
+  resetAllData: () => Promise<void>;
 
   // Tema
   tema: Tema;
@@ -55,13 +55,29 @@ interface AppState {
   generarAlertas: () => void;
 }
 
-// Contraseñas iniciales hasheadas (solo una vez al inicializar)
+// Contraseñas por defecto
 const DEFAULT_USERS = [
   { nombre: 'Carlos Admin', password: 'Admin1', rol: 'admin' as const, activo: true },
   { nombre: 'María Mesero', password: 'Mesero1', rol: 'mesero' as const, activo: true },
   { nombre: 'Chef Roberto', password: 'Cocina1', rol: 'cocina' as const, activo: true },
   { nombre: 'Ana López', password: 'Mesero1', rol: 'mesero' as const, activo: true },
 ];
+
+// Función para crear usuarios por defecto con contraseñas hasheadas
+async function createDefaultUsers(): Promise<Usuario[]> {
+  const users: Usuario[] = [];
+  for (const user of DEFAULT_USERS) {
+    const passwordHash = await hashPassword(user.password);
+    users.push({
+      id: uuidv4(),
+      nombre: user.nombre,
+      passwordHash,
+      rol: user.rol,
+      activo: user.activo,
+    });
+  }
+  return users;
+}
 
 export const useStore = create<AppState>()(
   persist(
@@ -70,51 +86,95 @@ export const useStore = create<AppState>()(
       currentUser: null,
       usuarios: [],
       isLoading: false,
-      isInitialized: false,
 
       initialize: async () => {
         const state = get();
-        if (state.isInitialized) return;
+        
+        // Si ya está cargando, no hacer nada
+        if (state.isLoading) return;
         
         set({ isLoading: true });
         
-        // Verificar si hay usuarios antiguos sin passwordHash (migración)
-        const needsMigration = state.usuarios.length > 0 && 
-          state.usuarios.some(u => !(u as any).passwordHash);
-        
-        // Si no hay usuarios O necesita migración, crear los por defecto
-        if (state.usuarios.length === 0 || needsMigration) {
-          const hashedUsers: Usuario[] = [];
-          for (const user of DEFAULT_USERS) {
-            const passwordHash = await hashPassword(user.password);
-            hashedUsers.push({
-              id: uuidv4(),
-              nombre: user.nombre,
-              passwordHash,
-              rol: user.rol,
-              activo: user.activo,
+        try {
+          // Verificar si los usuarios necesitan migración (no tienen passwordHash)
+          const needsMigration = state.usuarios.length === 0 || 
+            state.usuarios.some(u => !u.passwordHash || u.passwordHash === '');
+          
+          if (needsMigration) {
+            // Crear usuarios por defecto con contraseñas hasheadas
+            const defaultUsers = await createDefaultUsers();
+            set({ 
+              usuarios: defaultUsers, 
+              isLoading: false 
             });
+          } else {
+            set({ isLoading: false });
           }
-          set({ usuarios: hashedUsers, isInitialized: true, isLoading: false });
-        } else {
-          set({ isInitialized: true, isLoading: false });
+        } catch (error) {
+          console.error('Error initializing store:', error);
+          set({ isLoading: false });
         }
       },
 
       login: async (username: string, password: string) => {
         const state = get();
+        
+        // Buscar usuario por nombre
         const user = state.usuarios.find(u => u.nombre === username && u.activo);
-        if (!user) return false;
+        if (!user) {
+          console.log('Usuario no encontrado o inactivo:', username);
+          return false;
+        }
         
-        // Verificación segura con bcrypt (simula llamada a backend)
-        const isValid = await verifyPassword(password, user.passwordHash);
-        if (!isValid) return false;
+        // Verificar que tenga passwordHash
+        if (!user.passwordHash) {
+          console.error('Usuario sin passwordHash:', username);
+          return false;
+        }
         
-        set({ currentUser: user });
-        return true;
+        try {
+          // Verificación segura con bcrypt
+          const isValid = await verifyPassword(password, user.passwordHash);
+          if (!isValid) {
+            console.log('Contraseña incorrecta para:', username);
+            return false;
+          }
+          
+          set({ currentUser: user });
+          return true;
+        } catch (error) {
+          console.error('Error en login:', error);
+          return false;
+        }
       },
 
       logout: () => set({ currentUser: null, ultimaFactura: null }),
+
+      resetAllData: async () => {
+        set({ isLoading: true });
+        try {
+          const defaultUsers = await createDefaultUsers();
+          set({
+            usuarios: defaultUsers,
+            currentUser: null,
+            ingredientes: [],
+            platos: platosInit.map(p => ({ ...p, id: uuidv4() })),
+            mesas: mesasInit,
+            pedidos: pedidosIniciales.map(p => ({
+              ...p,
+              id: uuidv4(),
+              items: p.items.map(i => ({ ...i, id: uuidv4() }))
+            })),
+            alertas: [],
+            ultimaFactura: null,
+            restauranteConfig: configuracion,
+            isLoading: false,
+          });
+        } catch (error) {
+          console.error('Error resetting data:', error);
+          set({ isLoading: false });
+        }
+      },
 
       addUser: async (userData) => {
         const passwordHash = await hashPassword(userData.password);
@@ -130,9 +190,9 @@ export const useStore = create<AppState>()(
       },
 
       updateUser: async (id, data) => {
-        // Si se proporciona nueva contraseña, hashearla
         let updateData = { ...data };
-        if ((data as any).passwordHash) {
+        // Si se proporciona nueva contraseña (en el campo passwordHash), hashearla
+        if ((data as any).passwordHash && typeof (data as any).passwordHash === 'string') {
           updateData.passwordHash = await hashPassword((data as any).passwordHash);
         }
         set(state => ({
@@ -356,7 +416,6 @@ export const useStore = create<AppState>()(
         platos: state.platos,
         mesas: state.mesas,
         pedidos: state.pedidos,
-        isInitialized: state.isInitialized,
       }),
     }
   )

@@ -16,13 +16,13 @@ import FacturaModal from './components/FacturaModal';
 
 // Protected Route Component
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) {
-  const { currentUser, isInitialized } = useStore();
+  const { currentUser, isLoading } = useStore();
   const location = useLocation();
 
-  if (!isInitialized) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="text-white">Cargando...</div>
+        <div className="text-white text-lg">Cargando sistema...</div>
       </div>
     );
   }
@@ -93,17 +93,17 @@ function AppLayout() {
 }
 
 function AppInitializer() {
-  const { initialize, generarAlertas, isInitialized } = useStore();
+  const { initialize, generarAlertas, isLoading } = useStore();
 
   useEffect(() => {
     initialize();
   }, []);
 
   useEffect(() => {
-    if (isInitialized) {
+    if (!isLoading) {
       generarAlertas();
     }
-  }, [isInitialized]);
+  }, [isLoading]);
 
   return (
     <BrowserRouter>

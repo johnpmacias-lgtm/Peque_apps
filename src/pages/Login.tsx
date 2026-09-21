@@ -252,8 +252,10 @@ export default function Login() {
               <button
                 onClick={() => {
                   if (confirm('¿Resetear todos los datos? Se perderán los cambios guardados.')) {
-                    localStorage.clear();
-                    window.location.reload();
+                    const { resetAllData } = useStore.getState();
+                    resetAllData().then(() => {
+                      window.location.reload();
+                    });
                   }
                 }}
                 className={`mt-3 w-full text-xs py-2 rounded-lg transition ${
