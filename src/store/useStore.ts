@@ -91,7 +91,18 @@ interface AppState {
   caja: Caja;
   abrirCaja: (montoInicial: number) => void;
   cerrarCaja: () => void;
-  addMovimientoCaja: (tipo: 'ingreso' | 'egreso', concepto: string, monto: number) => void;
+  addMovimientoCaja: (tipo: 'ingreso' | 'egreso', concepto: string, monto: number, mesa?: number, mesero?: string, items?: any[]) => void;
+  registrarVentaAutomatica: (pedido: Pedido) => void;
+
+  // Historial de cocina
+  historialCocina: Array<{
+    id: string;
+    pedido: Pedido;
+    fecha_entrega: Date;
+    entregado_por: string;
+  }>;
+  agregarAHistorialCocina: (pedido: Pedido) => void;
+  contadorVentas: number;
 
   // Notificaciones
   notificaciones: Array<{ id: string; mensaje: string; tipo: 'info' | 'success' | 'warning' | 'error'; fecha: Date; leida: boolean }>;
@@ -393,6 +404,7 @@ export const useStore = create<AppState>()(
         if (estado === 'pagado' && pedido) {
           get().descontarInventario(pedidoId);
           get().setUltimaFactura(pedido);
+          get().registrarVentaAutomatica(pedido);
         }
       },
 
@@ -607,7 +619,7 @@ export const useStore = create<AppState>()(
         );
       },
 
-      addMovimientoCaja: (tipo, concepto, monto) => {
+      addMovimientoCaja: (tipo, concepto, monto, mesa, mesero, items) => {
         const state = get();
         if (!state.currentUser || state.caja.estado !== 'abierta') return;
 
@@ -618,13 +630,16 @@ export const useStore = create<AppState>()(
           monto,
           fecha: new Date(),
           usuario_id: state.currentUser.id,
-          usuario_nombre: state.currentUser.nombre
-        };
+          usuario_nombre: state.currentUser.nombre,
+          mesa,
+          mesero,
+          items
+        } as any;
 
         set(state => ({
           caja: {
             ...state.caja,
-            movimientos: [...state.caja.movimientos, nuevoMovimiento]
+            movimientos: [nuevoMovimiento, ...state.caja.movimientos] // Al inicio de la lista
           }
         }));
 
@@ -632,6 +647,45 @@ export const useStore = create<AppState>()(
           `${tipo === 'ingreso' ? 'Ingreso' : 'Egreso'} registrado: $${monto.toFixed(2)} - ${concepto}`,
           tipo === 'ingreso' ? 'success' : 'warning'
         );
+      },
+
+      registrarVentaAutomatica: (pedido) => {
+        const state = get();
+        if (state.caja.estado !== 'abierta') return;
+
+        state.contadorVentas++;
+        const numeroVenta = state.contadorVentas;
+
+        const concepto = `Venta #${numeroVenta} - Mesa ${pedido.mesa_numero} - ${pedido.mesero_nombre}`;
+        
+        get().addMovimientoCaja(
+          'ingreso',
+          concepto,
+          pedido.total,
+          pedido.mesa_numero,
+          pedido.mesero_nombre,
+          pedido.items
+        );
+      },
+
+      // Historial de cocina
+      historialCocina: [],
+      contadorVentas: 0,
+
+      agregarAHistorialCocina: (pedido) => {
+        const state = get();
+        if (!state.currentUser) return;
+
+        const entrada = {
+          id: uuidv4(),
+          pedido,
+          fecha_entrega: new Date(),
+          entregado_por: state.currentUser.nombre
+        };
+
+        set(state => ({
+          historialCocina: [entrada, ...state.historialCocina].slice(0, 100) // Máximo 100 entradas
+        }));
       },
 
       // Notificaciones

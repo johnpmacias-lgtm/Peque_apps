@@ -77,6 +77,14 @@ export interface MovimientoCaja {
   fecha: Date;
   usuario_id: string;
   usuario_nombre: string;
+  mesa?: number;
+  mesero?: string;
+  items?: Array<{
+    plato_nombre: string;
+    cantidad: number;
+    notas?: string;
+  }>;
+  [key: string]: any; // Permite campos adicionales
 }
 
 export interface Caja {

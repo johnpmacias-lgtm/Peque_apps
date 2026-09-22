@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { formatoEcuador } from '../store/useStore';
-import { UtensilsCrossed, Plus, Users as UsersIcon, Calendar, Phone, X, CheckCircle } from 'lucide-react';
+import { UtensilsCrossed, Plus, Users as UsersIcon, Calendar, Phone, X, CheckCircle, Unlock, DollarSign } from 'lucide-react';
 
 export default function Tables() {
-  const { mesas, pedidos, updateMesaEstado, platos, addPedido, currentUser, tema, addReserva, cancelReserva, reservas } = useStore();
+  const { mesas, pedidos, updateMesaEstado, platos, addPedido, currentUser, tema, addReserva, cancelReserva, reservas, updatePedidoEstado } = useStore();
   const [selectedMesa, setSelectedMesa] = useState<number | null>(null);
   const [orderItems, setOrderItems] = useState<{ platoId: string; cantidad: number; notas: string }[]>([]);
   const [notasGenerales, setNotasGenerales] = useState('');
@@ -63,6 +63,22 @@ export default function Tables() {
   const handleCancelReservation = (reservaId: string) => {
     if (confirm('¿Está seguro de cancelar esta reserva?')) {
       cancelReserva(reservaId);
+    }
+  };
+
+  const handleLiberarMesa = (mesaId: number) => {
+    if (confirm('¿Está seguro de liberar esta mesa?')) {
+      updateMesaEstado(mesaId, 'libre');
+    }
+  };
+
+  const handleCobrarYLiberar = (mesaId: number) => {
+    const pedido = getMesaPedido(mesaId);
+    if (!pedido) return;
+    
+    if (confirm(`¿Cobrar ${formatoEcuador.moneda(pedido.total)} y liberar la mesa?`)) {
+      updatePedidoEstado(pedido.id, 'pagado');
+      updateMesaEstado(mesaId, 'libre');
     }
   };
 
@@ -207,7 +223,7 @@ export default function Tables() {
               )}
 
               {/* Botones de acción */}
-              <div className="mt-3 flex gap-1">
+              <div className="mt-3 flex gap-1 flex-wrap">
                 {mesa.estado === 'libre' && (
                   <>
                     <button
@@ -235,28 +251,84 @@ export default function Tables() {
                   </>
                 )}
                 {mesa.estado === 'ocupada' && pedido && (
-                  <button
-                    onClick={() => handleSelectMesa(mesa.id)}
-                    className={`flex-1 text-xs py-1.5 rounded-lg transition ${
-                      isDark
-                        ? 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400'
-                        : 'bg-blue-50 hover:bg-blue-100 text-blue-600'
-                    }`}
-                  >
-                    + Agregar
-                  </button>
+                  <>
+                    <button
+                      onClick={() => handleSelectMesa(mesa.id)}
+                      className={`flex-1 text-xs py-1.5 rounded-lg transition ${
+                        isDark
+                          ? 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400'
+                          : 'bg-blue-50 hover:bg-blue-100 text-blue-600'
+                      }`}
+                    >
+                      + Agregar
+                    </button>
+                    {pedido.estado === 'servido' && (
+                      <button
+                        onClick={() => handleCobrarYLiberar(mesa.id)}
+                        className={`flex-1 text-xs py-1.5 rounded-lg transition flex items-center justify-center gap-1 ${
+                          isDark
+                            ? 'bg-green-500/10 hover:bg-green-500/20 text-green-400'
+                            : 'bg-green-50 hover:bg-green-100 text-green-600'
+                        }`}
+                        title="Cobrar y liberar mesa"
+                      >
+                        <DollarSign size={12} />
+                        Cobrar
+                      </button>
+                    )}
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleLiberarMesa(mesa.id)}
+                        className={`flex-1 text-xs py-1.5 rounded-lg transition flex items-center justify-center gap-1 ${
+                          isDark
+                            ? 'bg-orange-500/10 hover:bg-orange-500/20 text-orange-400'
+                            : 'bg-orange-50 hover:bg-orange-100 text-orange-600'
+                        }`}
+                        title="Liberar mesa"
+                      >
+                        <Unlock size={12} />
+                        Liberar
+                      </button>
+                    )}
+                  </>
                 )}
-                {mesa.estado === 'reservada' && reserva && isAdmin && (
-                  <button
-                    onClick={() => handleCancelReservation(reserva.id)}
-                    className={`flex-1 text-xs py-1.5 rounded-lg transition ${
-                      isDark
-                        ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400'
-                        : 'bg-red-50 hover:bg-red-100 text-red-600'
-                    }`}
-                  >
-                    Cancelar
-                  </button>
+                {mesa.estado === 'reservada' && isAdmin && (
+                  <>
+                    <button
+                      onClick={() => handleSelectMesa(mesa.id)}
+                      className={`flex-1 text-xs py-1.5 rounded-lg transition ${
+                        isDark
+                          ? 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400'
+                          : 'bg-blue-50 hover:bg-blue-100 text-blue-600'
+                      }`}
+                    >
+                      + Pedido
+                    </button>
+                    {reserva && (
+                      <button
+                        onClick={() => handleCancelReservation(reserva.id)}
+                        className={`flex-1 text-xs py-1.5 rounded-lg transition ${
+                          isDark
+                            ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400'
+                            : 'bg-red-50 hover:bg-red-100 text-red-600'
+                        }`}
+                      >
+                        Cancelar
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleLiberarMesa(mesa.id)}
+                      className={`flex-1 text-xs py-1.5 rounded-lg transition flex items-center justify-center gap-1 ${
+                        isDark
+                          ? 'bg-orange-500/10 hover:bg-orange-500/20 text-orange-400'
+                          : 'bg-orange-50 hover:bg-orange-100 text-orange-600'
+                      }`}
+                      title="Liberar mesa"
+                    >
+                      <Unlock size={12} />
+                      Libre
+                    </button>
+                  </>
                 )}
               </div>
             </div>

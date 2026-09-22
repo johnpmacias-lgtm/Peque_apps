@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { formatoEcuador } from '../store/useStore';
-import { Clock, ChefHat, CheckCircle2, AlertCircle, Bell, Timer, LogOut, Play, CheckCheck } from 'lucide-react';
+import { Clock, ChefHat, CheckCircle2, AlertCircle, Bell, Timer, LogOut, Play, CheckCheck, XCircle, History, X } from 'lucide-react';
 import { EstadoPedido } from '../types';
 
 export default function Kitchen() {
-  const { pedidos, updatePedidoItemEstado, updatePedidoEstado, tema, logout, addNotificacion, limpiarPedidosListosAntiguos } = useStore();
+  const { pedidos, updatePedidoItemEstado, updatePedidoEstado, tema, logout, addNotificacion, agregarAHistorialCocina, historialCocina } = useStore();
   const [notification, setNotification] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showHistory, setShowHistory] = useState(false);
   const isDark = tema === 'dark';
 
   useEffect(() => {
@@ -15,13 +16,7 @@ export default function Kitchen() {
     return () => clearInterval(timer);
   }, []);
 
-  // Limpiar pedidos listos antiguos cada 30 segundos
-  useEffect(() => {
-    const interval = setInterval(() => {
-      limpiarPedidosListosAntiguos();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  // Ya no se limpian automáticamente, ahora se archivan manualmente
 
   const pedidosActivos = pedidos.filter(p =>
     p.estado !== 'pagado' && p.estado !== 'cancelado'
@@ -64,6 +59,17 @@ export default function Kitchen() {
     setTimeout(() => setNotification(null), 3000);
   };
 
+  // Archivar pedido listo (cerrar y pasar a historial)
+  const handleArchiveReady = (pedidoId: string) => {
+    const pedido = pedidos.find(p => p.id === pedidoId);
+    if (!pedido) return;
+    
+    agregarAHistorialCocina(pedido);
+    updatePedidoEstado(pedidoId, 'servido');
+    setNotification(`📦 Pedido archivado en historial`);
+    setTimeout(() => setNotification(null), 2000);
+  };
+
   // Marcar todo el pedido como preparando
   const handleStartAllPreparing = (pedidoId: string) => {
     const pedido = pedidos.find(p => p.id === pedidoId);
@@ -103,6 +109,17 @@ export default function Kitchen() {
             </span>
             <span className="text-xs text-green-400">En Línea</span>
           </div>
+          <button
+            onClick={() => setShowHistory(true)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
+              isDark 
+                ? 'bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20' 
+                : 'bg-purple-50 hover:bg-purple-100 text-purple-600 border border-purple-200'
+            }`}
+          >
+            <History size={16} />
+            Historial ({historialCocina.length})
+          </button>
           <button
             onClick={logout}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
@@ -422,18 +439,28 @@ export default function Kitchen() {
                     <p className={`text-xs font-medium ${isDark ? 'text-green-400' : 'text-green-700'}`}>
                       🔔 Mesero notificado para recoger
                     </p>
-                    <p className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Se eliminará automáticamente en 2 minutos
-                    </p>
                   </div>
 
                   <div className={`flex items-center justify-between pt-2 mt-3 border-t ${isDark ? 'border-gray-700/50' : 'border-gray-200'}`}>
                     <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                       {pedido.mesero_nombre}
                     </span>
-                    <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-                      {formatoEcuador.moneda(pedido.total)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                        {formatoEcuador.moneda(pedido.total)}
+                      </span>
+                      <button
+                        onClick={() => handleArchiveReady(pedido.id)}
+                        className={`p-1.5 rounded-lg transition ${
+                          isDark 
+                            ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' 
+                            : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                        }`}
+                        title="Archivar pedido entregado"
+                      >
+                        <XCircle size={16} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -447,6 +474,93 @@ export default function Kitchen() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Historial */}
+      {showHistory && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className={`rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border ${
+            isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
+            <div className={`p-5 border-b flex items-center justify-between ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+              <div className="flex items-center gap-3">
+                <History className={isDark ? 'text-purple-400' : 'text-purple-600'} size={24} />
+                <div>
+                  <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    Historial de Pedidos Entregados
+                  </h3>
+                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {historialCocina.length} pedidos archivados
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowHistory(false)}
+                className={`p-2 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5">
+              {historialCocina.length === 0 ? (
+                <div className={`text-center py-12 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  <History size={48} className="mx-auto mb-3 opacity-30" />
+                  <p>No hay pedidos en el historial</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {historialCocina.map((entrada) => (
+                    <div key={entrada.id} className={`rounded-xl border p-4 ${
+                      isDark ? 'bg-gray-900/50 border-gray-700/50' : 'bg-gray-50 border-gray-200'
+                    }`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <span className={`text-sm font-bold px-3 py-1 rounded-lg ${
+                            isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700'
+                          }`}>
+                            Mesa {entrada.pedido.mesa_numero}
+                          </span>
+                          <div>
+                            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                              Entregado: {new Date(entrada.fecha_entrega).toLocaleString('es-EC')}
+                            </p>
+                            <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                              Por: {entrada.entregado_por}
+                            </p>
+                          </div>
+                        </div>
+                        <span className={`text-lg font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                          {formatoEcuador.moneda(entrada.pedido.total)}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        {entrada.pedido.items.map((item, idx) => (
+                          <div key={idx} className={`flex items-center justify-between text-sm ${
+                            isDark ? 'text-gray-300' : 'text-gray-700'
+                          }`}>
+                            <span>
+                              <span className="font-mono text-xs">x{item.cantidad}</span> {item.plato_nombre}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {entrada.pedido.mesero_nombre && (
+                        <div className={`mt-2 pt-2 border-t text-xs ${
+                          isDark ? 'border-gray-700 text-gray-500' : 'border-gray-200 text-gray-500'
+                        }`}>
+                          Mesero: {entrada.pedido.mesero_nombre}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -181,40 +181,86 @@ export default function CashRegister() {
             </div>
           ) : (
             <div className="space-y-2 max-h-96 overflow-y-auto">
-              {caja.movimientos.map(mov => (
-                <div
-                  key={mov.id}
-                  className={`flex items-center justify-between p-3 rounded-xl border ${
-                    mov.tipo === 'ingreso'
-                      ? 'bg-green-500/5 border-green-500/20'
-                      : 'bg-red-500/5 border-red-500/20'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      mov.tipo === 'ingreso' ? 'bg-green-500/10' : 'bg-red-500/10'
-                    }`}>
-                      {mov.tipo === 'ingreso' ? (
-                        <TrendingUp className="text-green-400" size={20} />
-                      ) : (
-                        <TrendingDown className="text-red-400" size={20} />
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-white">{mov.concepto}</p>
-                      <p className="text-xs text-gray-400 flex items-center gap-1">
-                        <User size={12} />
-                        {mov.usuario_nombre} • {new Date(mov.fecha).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}
+              {caja.movimientos.map((mov, index) => {
+                const esVenta = mov.mesa !== undefined && mov.items !== undefined;
+                const numeroVenta = esVenta ? caja.movimientos.filter(m => m.mesa !== undefined).length - index : null;
+                
+                return (
+                  <div
+                    key={mov.id}
+                    className={`p-3 rounded-xl border ${
+                      mov.tipo === 'ingreso'
+                        ? esVenta
+                          ? 'bg-green-500/5 border-green-500/20'
+                          : 'bg-blue-500/5 border-blue-500/20'
+                        : 'bg-red-500/5 border-red-500/20'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                          mov.tipo === 'ingreso' 
+                            ? esVenta ? 'bg-green-500/10' : 'bg-blue-500/10'
+                            : 'bg-red-500/10'
+                        }`}>
+                          {mov.tipo === 'ingreso' ? (
+                            esVenta ? <DollarSign className="text-green-400" size={20} /> : <TrendingUp className="text-blue-400" size={20} />
+                          ) : (
+                            <TrendingDown className="text-red-400" size={20} />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            {esVenta && numeroVenta && (
+                              <span className="text-xs font-bold px-2 py-0.5 rounded bg-green-500/20 text-green-400">
+                                Venta #{numeroVenta}
+                              </span>
+                            )}
+                            <p className="text-sm font-medium text-white">{mov.concepto}</p>
+                          </div>
+                          <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                            <User size={12} />
+                            {mov.usuario_nombre} • {new Date(mov.fecha).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                      <p className={`text-lg font-bold ${
+                        mov.tipo === 'ingreso' ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {mov.tipo === 'ingreso' ? '+' : '-'}{formatoEcuador.moneda(mov.monto)}
                       </p>
                     </div>
+                    
+                    {/* Detalles de venta */}
+                    {esVenta && (
+                      <div className="mt-3 pt-3 border-t border-gray-700/30">
+                        <div className="flex items-center gap-4 mb-2">
+                          <span className="text-xs text-amber-400 font-medium">
+                            🍽️ Mesa {mov.mesa}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            👤 Mesero: {mov.mesero}
+                          </span>
+                        </div>
+                        <div className="space-y-1">
+                          {(mov.items || []).map((item, idx) => (
+                            <div key={idx} className="flex items-center justify-between text-xs">
+                              <span className="text-gray-300">
+                                <span className="font-mono text-gray-500">x{item.cantidad}</span> {item.plato_nombre}
+                              </span>
+                              {item.notas && (
+                                <span className="text-amber-400/70 italic text-xs">
+                                  📝 {item.notas}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <p className={`text-lg font-bold ${
-                    mov.tipo === 'ingreso' ? 'text-green-400' : 'text-red-400'
-                  }`}>
-                    {mov.tipo === 'ingreso' ? '+' : '-'}{formatoEcuador.moneda(mov.monto)}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
