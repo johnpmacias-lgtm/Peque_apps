@@ -1,2 +1,2 @@
 # Peque_apps
-Apps creadas para facilitar en trabajo en linux
+Apps creadas para facilitar el trabajo en linux
