@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { formatoEcuador } from '../store/useStore';
-import { UtensilsCrossed, Plus, Users as UsersIcon, Calendar, Phone, X, CheckCircle, Unlock, DollarSign } from 'lucide-react';
+import { UtensilsCrossed, Plus, Users as UsersIcon, Calendar, Phone, X, CheckCircle, Unlock, DollarSign, Settings } from 'lucide-react';
 
 export default function Tables() {
-  const { mesas, pedidos, updateMesaEstado, platos, addPedido, currentUser, tema, addReserva, cancelReserva, reservas, updatePedidoEstado } = useStore();
+  const { mesas, pedidos, updateMesaEstado, platos, addPedido, currentUser, tema, addReserva, cancelReserva, reservas, updatePedidoEstado, updateMesa } = useStore();
   const [selectedMesa, setSelectedMesa] = useState<number | null>(null);
   const [orderItems, setOrderItems] = useState<{ platoId: string; cantidad: number; notas: string }[]>([]);
   const [notasGenerales, setNotasGenerales] = useState('');
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showReservationModal, setShowReservationModal] = useState(false);
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [configForm, setConfigForm] = useState({
+    numero: 0,
+    capacidad: 4
+  });
   const [reservationForm, setReservationForm] = useState({
     nombre_cliente: '',
     telefono: '',
@@ -80,6 +85,30 @@ export default function Tables() {
       updatePedidoEstado(pedido.id, 'pagado');
       updateMesaEstado(mesaId, 'libre');
     }
+  };
+
+  const handleConfigMesa = (mesaId: number) => {
+    const mesa = mesas.find(m => m.id === mesaId);
+    if (!mesa) return;
+    
+    setSelectedMesa(mesaId);
+    setConfigForm({
+      numero: mesa.numero,
+      capacidad: mesa.capacidad
+    });
+    setShowConfigModal(true);
+  };
+
+  const handleSaveConfig = () => {
+    if (!selectedMesa) return;
+    
+    updateMesa(selectedMesa, {
+      numero: configForm.numero,
+      capacidad: configForm.capacidad
+    });
+    
+    setShowConfigModal(false);
+    setSelectedMesa(null);
   };
 
   const addItem = (platoId: string) => {
@@ -171,6 +200,24 @@ export default function Tables() {
                     : 'bg-yellow-50 border-yellow-300'
               }`}
             >
+              {/* Botón de configuración (solo admin) */}
+              {isAdmin && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleConfigMesa(mesa.id);
+                  }}
+                  className={`absolute top-2 right-2 p-1.5 rounded-lg transition ${
+                    isDark
+                      ? 'bg-gray-700/50 hover:bg-gray-600 text-gray-400 hover:text-white'
+                      : 'bg-gray-200/50 hover:bg-gray-300 text-gray-500 hover:text-gray-900'
+                  }`}
+                  title="Configurar mesa"
+                >
+                  <Settings size={14} />
+                </button>
+              )}
+              
               <div className="flex items-center justify-between mb-2">
                 <span className={`text-2xl font-bold ${
                   mesa.estado === 'libre'
@@ -615,6 +662,87 @@ export default function Tables() {
                 >
                   <CheckCircle size={16} />
                   Confirmar Reserva
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Configuración de Mesa */}
+      {showConfigModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className={`rounded-2xl w-full max-w-md p-6 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`text-lg font-semibold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <Settings className="text-amber-400" size={20} />
+                Configurar Mesa
+              </h3>
+              <button
+                onClick={() => {
+                  setShowConfigModal(false);
+                  setSelectedMesa(null);
+                }}
+                className={`p-2 rounded-lg transition ${isDark ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Número de Mesa
+                </label>
+                <input
+                  type="number"
+                  value={configForm.numero}
+                  onChange={e => setConfigForm({ ...configForm, numero: parseInt(e.target.value) || 0 })}
+                  min="1"
+                  className={`w-full px-4 py-2.5 rounded-xl text-sm ${
+                    isDark
+                      ? 'bg-gray-700/50 border border-gray-600/50 text-white'
+                      : 'bg-gray-50 border border-gray-300 text-gray-900'
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Capacidad (personas)
+                </label>
+                <input
+                  type="number"
+                  value={configForm.capacidad}
+                  onChange={e => setConfigForm({ ...configForm, capacidad: parseInt(e.target.value) || 1 })}
+                  min="1"
+                  max="20"
+                  className={`w-full px-4 py-2.5 rounded-xl text-sm ${
+                    isDark
+                      ? 'bg-gray-700/50 border border-gray-600/50 text-white'
+                      : 'bg-gray-50 border border-gray-300 text-gray-900'
+                  }`}
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => {
+                    setShowConfigModal(false);
+                    setSelectedMesa(null);
+                  }}
+                  className={`flex-1 px-4 py-2.5 rounded-xl text-sm transition ${
+                    isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveConfig}
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-sm font-medium transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
+                >
+                  <CheckCircle size={16} />
+                  Guardar
                 </button>
               </div>
             </div>

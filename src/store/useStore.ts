@@ -72,6 +72,7 @@ interface AppState {
   updatePedidoItemEstado: (pedidoId: string, itemId: string, estado: EstadoPedido) => void;
   updatePedidoEstado: (pedidoId: string, estado: EstadoPedido) => void;
   updateMesaEstado: (mesaId: number, estado: Mesa['estado']) => void;
+  updateMesa: (mesaId: number, data: Partial<Mesa>) => void;
   addIngrediente: (ingrediente: Omit<Ingrediente, 'id'>) => void;
   updateIngredienteStock: (id: string, cantidad: number) => void;
   addPlato: (plato: Omit<Plato, 'id'>) => void;
@@ -401,6 +402,11 @@ export const useStore = create<AppState>()(
           ),
         }));
 
+        // Si el pedido pasa a estado 'servido', archivarlo automáticamente en el historial de cocina
+        if (estado === 'servido' && pedido) {
+          get().agregarAHistorialCocina(pedido);
+        }
+
         if (estado === 'pagado' && pedido) {
           get().descontarInventario(pedidoId);
           get().setUltimaFactura(pedido);
@@ -411,6 +417,12 @@ export const useStore = create<AppState>()(
       updateMesaEstado: (mesaId, estado) => {
         set(state => ({
           mesas: state.mesas.map(m => m.id === mesaId ? { ...m, estado } : m),
+        }));
+      },
+
+      updateMesa: (mesaId, data) => {
+        set(state => ({
+          mesas: state.mesas.map(m => m.id === mesaId ? { ...m, ...data } : m),
         }));
       },
 
