@@ -1,9 +1,35 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
-import { Usuario, ConfiguracionRestaurante, Ingrediente, Plato, Mesa, Pedido, PedidoItem, EstadoPedido, AlertaInventario } from '../types';
+import { Usuario, ConfiguracionRestaurante, Ingrediente, Plato, Mesa, Pedido, PedidoItem, EstadoPedido, AlertaInventario, Reserva, Caja, MovimientoCaja } from '../types';
 import { hashPassword, verifyPassword } from '../services/authService';
 import { configuracion, platos as platosInit, mesas as mesasInit, pedidosIniciales, platoIngredientes } from '../data/mockData';
+
+// Formato de números para Ecuador (USD)
+export const formatoEcuador = {
+  moneda: (valor: number): string => {
+    return new Intl.NumberFormat('es-EC', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(valor);
+  },
+  numero: (valor: number): string => {
+    return new Intl.NumberFormat('es-EC', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }).format(valor);
+  },
+  telefono: (valor: string): string => {
+    // Formato ecuatoriano: +593 XX XXX XXXX
+    const limpio = valor.replace(/\D/g, '');
+    if (limpio.length === 9) {
+      return `+593 ${limpio.slice(0, 2)} ${limpio.slice(2, 5)} ${limpio.slice(5)}`;
+    }
+    return valor;
+  }
+};
 
 type Tema = 'light' | 'dark';
 
@@ -53,6 +79,25 @@ interface AppState {
   deletePlato: (id: string) => void;
   descontarInventario: (pedidoId: string) => void;
   generarAlertas: () => void;
+  limpiarPedidosListosAntiguos: () => void;
+
+  // Reservas
+  reservas: Reserva[];
+  addReserva: (reserva: Omit<Reserva, 'id' | 'estado'>) => void;
+  updateReserva: (id: string, data: Partial<Reserva>) => void;
+  cancelReserva: (id: string) => void;
+
+  // Caja
+  caja: Caja;
+  abrirCaja: (montoInicial: number) => void;
+  cerrarCaja: () => void;
+  addMovimientoCaja: (tipo: 'ingreso' | 'egreso', concepto: string, monto: number) => void;
+
+  // Notificaciones
+  notificaciones: Array<{ id: string; mensaje: string; tipo: 'info' | 'success' | 'warning' | 'error'; fecha: Date; leida: boolean }>;
+  addNotificacion: (mensaje: string, tipo: 'info' | 'success' | 'warning' | 'error') => void;
+  marcarNotificacionLeida: (id: string) => void;
+  limpiarNotificacionesLeidas: () => void;
 }
 
 // Contraseñas por defecto
@@ -437,6 +482,188 @@ export const useStore = create<AppState>()(
 
         set({ alertas });
       },
+
+      limpiarPedidosListosAntiguos: () => {
+        const state = get();
+        const ahora = new Date();
+        const dosMinutosAtras = new Date(ahora.getTime() - 2 * 60 * 1000);
+
+        const pedidosFiltrados = state.pedidos.filter(pedido => {
+          // Mantener pedidos que NO estén listos o que estén listos pero hace menos de 2 minutos
+          if (pedido.estado !== 'listo') return true;
+          return new Date(pedido.fecha_actualizacion) > dosMinutosAtras;
+        });
+
+        if (pedidosFiltrados.length !== state.pedidos.length) {
+          console.log('🧹 Limpiando pedidos listos antiguos:', state.pedidos.length - pedidosFiltrados.length, 'pedidos');
+          set({ pedidos: pedidosFiltrados });
+        }
+      },
+
+      // Reservas
+      reservas: [],
+      
+      addReserva: (reserva) => {
+        const state = get();
+        const nuevaReserva: Reserva = {
+          ...reserva,
+          id: uuidv4(),
+          estado: 'confirmada'
+        };
+        
+        set(state => ({
+          reservas: [...state.reservas, nuevaReserva],
+          mesas: state.mesas.map(m => 
+            m.id === reserva.mesa_id ? { ...m, estado: 'reservada' as const, reserva: nuevaReserva } : m
+          )
+        }));
+        
+        get().addNotificacion(`Nueva reserva para Mesa ${reserva.mesa_id} - ${reserva.nombre_cliente}`, 'info');
+      },
+
+      updateReserva: (id, data) => {
+        set(state => ({
+          reservas: state.reservas.map(r => r.id === id ? { ...r, ...data } : r)
+        }));
+      },
+
+      cancelReserva: (id) => {
+        const state = get();
+        const reserva = state.reservas.find(r => r.id === id);
+        
+        if (reserva) {
+          set(state => ({
+            reservas: state.reservas.map(r => r.id === id ? { ...r, estado: 'cancelada' as const } : r),
+            mesas: state.mesas.map(m => 
+              m.reserva?.id === id ? { ...m, estado: 'libre' as const, reserva: undefined } : m
+            )
+          }));
+          
+          get().addNotificacion(`Reserva cancelada - Mesa ${reserva.mesa_id}`, 'warning');
+        }
+      },
+
+      // Caja
+      caja: {
+        id: uuidv4(),
+        estado: 'cerrada',
+        fecha_apertura: null,
+        fecha_cierre: null,
+        monto_inicial: 0,
+        monto_final: 0,
+        movimientos: [],
+        usuario_apertura: '',
+        usuario_cierre: ''
+      },
+
+      abrirCaja: (montoInicial) => {
+        const state = get();
+        if (!state.currentUser) return;
+
+        set({
+          caja: {
+            id: uuidv4(),
+            estado: 'abierta',
+            fecha_apertura: new Date(),
+            fecha_cierre: null,
+            monto_inicial: montoInicial,
+            monto_final: montoInicial,
+            movimientos: [],
+            usuario_apertura: state.currentUser.nombre,
+            usuario_cierre: ''
+          }
+        });
+
+        get().addNotificacion(`Caja abierta por ${state.currentUser.nombre} con $${montoInicial.toFixed(2)}`, 'success');
+      },
+
+      cerrarCaja: () => {
+        const state = get();
+        if (!state.currentUser) return;
+
+        const movimientos = state.caja.movimientos;
+        const totalIngresos = movimientos
+          .filter(m => m.tipo === 'ingreso')
+          .reduce((sum, m) => sum + m.monto, 0);
+        const totalEgresos = movimientos
+          .filter(m => m.tipo === 'egreso')
+          .reduce((sum, m) => sum + m.monto, 0);
+        
+        const montoFinal = state.caja.monto_inicial + totalIngresos - totalEgresos;
+
+        set(state => ({
+          caja: {
+            ...state.caja,
+            estado: 'cerrada',
+            fecha_cierre: new Date(),
+            monto_final: montoFinal,
+            usuario_cierre: state.currentUser!.nombre
+          }
+        }));
+
+        get().addNotificacion(
+          `Caja cerrada por ${state.currentUser.nombre}. Total: $${montoFinal.toFixed(2)}`,
+          'success'
+        );
+      },
+
+      addMovimientoCaja: (tipo, concepto, monto) => {
+        const state = get();
+        if (!state.currentUser || state.caja.estado !== 'abierta') return;
+
+        const nuevoMovimiento: MovimientoCaja = {
+          id: uuidv4(),
+          tipo,
+          concepto,
+          monto,
+          fecha: new Date(),
+          usuario_id: state.currentUser.id,
+          usuario_nombre: state.currentUser.nombre
+        };
+
+        set(state => ({
+          caja: {
+            ...state.caja,
+            movimientos: [...state.caja.movimientos, nuevoMovimiento]
+          }
+        }));
+
+        get().addNotificacion(
+          `${tipo === 'ingreso' ? 'Ingreso' : 'Egreso'} registrado: $${monto.toFixed(2)} - ${concepto}`,
+          tipo === 'ingreso' ? 'success' : 'warning'
+        );
+      },
+
+      // Notificaciones
+      notificaciones: [],
+
+      addNotificacion: (mensaje, tipo) => {
+        const nuevaNotificacion = {
+          id: uuidv4(),
+          mensaje,
+          tipo,
+          fecha: new Date(),
+          leida: false
+        };
+
+        set(state => ({
+          notificaciones: [nuevaNotificacion, ...state.notificaciones].slice(0, 50) // Máximo 50 notificaciones
+        }));
+      },
+
+      marcarNotificacionLeida: (id) => {
+        set(state => ({
+          notificaciones: state.notificaciones.map(n => 
+            n.id === id ? { ...n, leida: true } : n
+          )
+        }));
+      },
+
+      limpiarNotificacionesLeidas: () => {
+        set(state => ({
+          notificaciones: state.notificaciones.filter(n => !n.leida)
+        }));
+      },
     }),
     {
       name: 'restaurante-pos-storage',
@@ -449,6 +676,9 @@ export const useStore = create<AppState>()(
         platos: state.platos,
         mesas: state.mesas,
         pedidos: state.pedidos,
+        reservas: state.reservas,
+        caja: state.caja,
+        notificaciones: state.notificaciones,
       }),
     }
   )

@@ -54,6 +54,41 @@ export interface Mesa {
   numero: number;
   capacidad: number;
   estado: 'libre' | 'ocupada' | 'reservada';
+  reserva?: Reserva;
+}
+
+export interface Reserva {
+  id: string;
+  mesa_id: number;
+  nombre_cliente: string;
+  telefono: string;
+  numero_personas: number;
+  fecha_reserva: Date;
+  hora_reserva: string;
+  notas: string;
+  estado: 'confirmada' | 'cancelada' | 'completada';
+}
+
+export interface MovimientoCaja {
+  id: string;
+  tipo: 'ingreso' | 'egreso';
+  concepto: string;
+  monto: number;
+  fecha: Date;
+  usuario_id: string;
+  usuario_nombre: string;
+}
+
+export interface Caja {
+  id: string;
+  estado: 'abierta' | 'cerrada';
+  fecha_apertura: Date | null;
+  fecha_cierre: Date | null;
+  monto_inicial: number;
+  monto_final: number;
+  movimientos: MovimientoCaja[];
+  usuario_apertura: string;
+  usuario_cierre: string;
 }
 
 export type EstadoPedido = 'pendiente' | 'preparando' | 'listo' | 'servido' | 'pagado' | 'cancelado';

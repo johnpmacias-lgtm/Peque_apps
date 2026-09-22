@@ -8,9 +8,9 @@ export const configuracion: ConfiguracionRestaurante = {
   id: uuidv4(),
   nombre: 'La Casa del Sabor',
   logotipo: '🍽️',
-  moneda: 'MXN',
-  direccion: 'Av. Reforma 123, Col. Centro, CDMX',
-  telefono: '+52 55 1234 5678',
+  moneda: 'USD',
+  direccion: 'Av. Amazonas N34-165 y Juan León Mera, Quito, Ecuador',
+  telefono: '+593 99 123 4567',
   tema: 'dark',
   colorPrimario: '#f59e0b',
 };

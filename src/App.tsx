@@ -11,6 +11,7 @@ import Orders from './pages/Orders';
 import ConfigPage from './pages/ConfigPage';
 import UsersPage from './pages/UsersPage';
 import MenuPage from './pages/MenuPage';
+import CashRegister from './pages/CashRegister';
 import Sidebar from './components/Sidebar';
 import FacturaModal from './components/FacturaModal';
 
@@ -167,6 +168,13 @@ function AppLayout() {
           <Route path="/pedidos" element={
             <RouteGuard allowedRoles={['admin', 'mesero']}>
               <Orders />
+            </RouteGuard>
+          } />
+          
+          {/* Caja - Solo admin */}
+          <Route path="/caja" element={
+            <RouteGuard allowedRoles={['admin']}>
+              <CashRegister />
             </RouteGuard>
           } />
           
