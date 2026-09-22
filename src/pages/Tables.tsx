@@ -72,7 +72,17 @@ export default function Tables() {
   };
 
   const handleLiberarMesa = (mesaId: number) => {
-    if (confirm('¿Está seguro de liberar esta mesa?')) {
+    const pedido = getMesaPedido(mesaId);
+    const mensaje = pedido 
+      ? '¿Está seguro de liberar esta mesa? El pedido activo será cancelado.'
+      : '¿Está seguro de liberar esta mesa?';
+    
+    if (confirm(mensaje)) {
+      // Si hay un pedido activo, cancelarlo primero
+      if (pedido) {
+        updatePedidoEstado(pedido.id, 'cancelado');
+      }
+      // Luego liberar la mesa
       updateMesaEstado(mesaId, 'libre');
     }
   };
@@ -82,8 +92,8 @@ export default function Tables() {
     if (!pedido) return;
     
     if (confirm(`¿Cobrar ${formatoEcuador.moneda(pedido.total)} y liberar la mesa?`)) {
+      // El store ya se encarga de liberar la mesa automáticamente cuando se marca como pagado
       updatePedidoEstado(pedido.id, 'pagado');
-      updateMesaEstado(mesaId, 'libre');
     }
   };
 
@@ -309,20 +319,18 @@ export default function Tables() {
                     >
                       + Agregar
                     </button>
-                    {pedido.estado === 'servido' && (
-                      <button
-                        onClick={() => handleCobrarYLiberar(mesa.id)}
-                        className={`flex-1 text-xs py-1.5 rounded-lg transition flex items-center justify-center gap-1 ${
-                          isDark
-                            ? 'bg-green-500/10 hover:bg-green-500/20 text-green-400'
-                            : 'bg-green-50 hover:bg-green-100 text-green-600'
-                        }`}
-                        title="Cobrar y liberar mesa"
-                      >
-                        <DollarSign size={12} />
-                        Cobrar
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleCobrarYLiberar(mesa.id)}
+                      className={`flex-1 text-xs py-1.5 rounded-lg transition flex items-center justify-center gap-1 ${
+                        isDark
+                          ? 'bg-green-500/10 hover:bg-green-500/20 text-green-400'
+                          : 'bg-green-50 hover:bg-green-100 text-green-600'
+                      }`}
+                      title="Cobrar y liberar mesa"
+                    >
+                      <DollarSign size={12} />
+                      Cobrar
+                    </button>
                     {isAdmin && (
                       <button
                         onClick={() => handleLiberarMesa(mesa.id)}
@@ -331,7 +339,7 @@ export default function Tables() {
                             ? 'bg-orange-500/10 hover:bg-orange-500/20 text-orange-400'
                             : 'bg-orange-50 hover:bg-orange-100 text-orange-600'
                         }`}
-                        title="Liberar mesa"
+                        title="Liberar mesa y cancelar pedido"
                       >
                         <Unlock size={12} />
                         Liberar

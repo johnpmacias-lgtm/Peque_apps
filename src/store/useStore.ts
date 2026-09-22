@@ -411,6 +411,13 @@ export const useStore = create<AppState>()(
           get().descontarInventario(pedidoId);
           get().setUltimaFactura(pedido);
           get().registrarVentaAutomatica(pedido);
+
+          // Liberar automáticamente la mesa asociada al pedido pagado
+          set(state => ({
+            mesas: state.mesas.map(m =>
+              m.id === pedido.mesa_id ? { ...m, estado: 'libre' as const } : m
+            ),
+          }));
         }
       },
 

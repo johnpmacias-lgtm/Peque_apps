@@ -170,7 +170,7 @@ export default function Orders() {
                     🍽️ Marcar Servido
                   </button>
                 )}
-                {pedido.estado === 'servido' && (
+                {(pedido.estado === 'servido' || pedido.estado === 'listo' || pedido.estado === 'preparando') && (
                   <button
                     onClick={() => handleUpdateEstado(pedido.id, 'pagado')}
                     className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-lg text-xs transition flex items-center gap-1"
